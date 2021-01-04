@@ -1,0 +1,68 @@
+
+.login100-form-btn{
+    background-color: #df7166;
+}
+.login100-form-link:hover{
+    color: #EF978E;
+}
+.login100-title-text{
+    color: white;
+}
+.login100-title-text h1{
+    font-family: 'Montserrat-Bold';
+    font-size: 2.5rem;
+    color: white;
+    transition: 0.3s;
+}
+.login100-title-text h1:hover{
+    color: #EF978E;
+    transition: 0.3s;
+}
+.login100-title-text p{
+    color: white;
+    font-weight: 300;
+    font-size: 1.1rem;
+}
+.btn-custom-primary{
+    color: #fff;
+    background-color: #4DA961;
+    border-color: #4DA961;
+    padding: 15px;
+}
+.btn-custom-primary:focus{
+    box-shadow: 0 0 0 3px rgba(75,127,86,.5);
+}
+.btn-custom-primary:hover{
+    background-color: #333333;
+    border-color: #333333;
+    color: #fff;
+}
+.login100-form-custom-list{
+    padding-left: 3%;
+}
+.login100-form-custom-list li{
+    list-style-type: disc;
+}
+.custom-logo-name{
+    font-size: 2.5rem;
+    font-family: Montserrat-Bold;
+    padding-bottom: 2%;
+}
+
+@media (max-width: 768px) {
+    .login100-form {
+        width: 100%;
+        padding-top: 100px;
+    }
+    .login100-form-title{
+        font-size: 22px;
+    }
+    .custom-logo-name{
+        font-size: 2.5rem;
+    }
+}
+@media (min-width: 992px) {
+    .login100-form{
+        padding: 90px 55px 55px 55px
+    }
+}
