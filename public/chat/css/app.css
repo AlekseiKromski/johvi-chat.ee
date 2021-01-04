@@ -858,10 +858,10 @@ body[data-layout="horizontal"][data-layout-size="boxed"] .container-fluid, body[
 
 /*!
  * Waves v0.7.6
- * http://fian.my.id/Waves 
- * 
- * Copyright 2014-2018 Alfiana E. Sibuea and other contributors 
- * Released under the MIT license 
+ * http://fian.my.id/Waves
+ *
+ * Copyright 2014-2018 Alfiana E. Sibuea and other contributors
+ * Released under the MIT license
  * https://github.com/fians/Waves/blob/master/LICENSE */
 .waves-effect {
   position: relative;
@@ -3209,10 +3209,10 @@ div.dt-button-info {
 .chat-conversation .right .conversation-list {
   float: right; }
   .chat-conversation .right .conversation-list .conversation-name {
-    text-align: right; }
+    text-align: left; }
   .chat-conversation .right .conversation-list .ctext-wrap-content {
     background-color: #eff2f7;
-    text-align: right;
+    text-align: left;
     color: #74788d; }
   .chat-conversation .right .conversation-list .chat-time {
     text-align: left; }

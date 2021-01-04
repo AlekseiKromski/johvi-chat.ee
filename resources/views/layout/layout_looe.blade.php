@@ -15,6 +15,8 @@
     <link href="{{asset('chat/css/icons.min.css')}}" rel="stylesheet" type="text/css" />
     <!-- App Css-->
     <link href="{{asset('chat/css/app.min.css')}}" id="app-style" rel="stylesheet" type="text/css" />
+    <!-- Custom Css-->
+    <link href="{{asset('chat/css/custom.css')}}" id="app-style" rel="stylesheet" type="text/css" />
 
 </head>
 

@@ -148,7 +148,7 @@ export default {
         }
     },
     mounted() {
-        let socket = io.connect('http://localhost:3000', {transports: ['websocket', 'polling', 'flashsocket']});
+        let socket = io.connect('http://178.248.138.70:3000', {transports: ['websocket', 'polling', 'flashsocket']});
         socket.on("message-room:App\\Events\\NewMessage", function (data){
             this.dataMessages.push(data);
             let messageBlock = $('.simplebar-content')[1];
@@ -158,7 +158,7 @@ export default {
                 <li class="right">
                                             <div class="conversation-list">
                                                 <div class="ctext-wrap">
-                                                    <div class="conversation-name">Ricky Clark</div>
+                                                    <div class="conversation-name">${this.username}</div>
                                                     <div class="ctext-wrap-content">
                                                         <p class="mb-0">
                                                             ${data.message}
@@ -175,7 +175,7 @@ export default {
                 <li>
                                             <div class="conversation-list">
                                                 <div class="ctext-wrap">
-                                                    <div class="conversation-name">Ricky Clark</div>
+                                                    <div class="conversation-name">NO USER NAME</div>
                                                     <div class="ctext-wrap-content">
                                                         <p class="mb-0">
                                                             ${data.message}
