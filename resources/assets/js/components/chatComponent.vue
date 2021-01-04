@@ -102,44 +102,8 @@
                             <div class="px-lg-2">
                                 <div class="chat-conversation p-3">
                                     <ul class="list-unstyled mb-0 pr-3" data-simplebar style="max-height: 450px;">
-                                        <li>
-                                            <div class="conversation-list">
-                                                <div class="chat-avatar">
-                                                    <img src="chat/images/users/avatar-2.jpg" alt="">
-                                                </div>
-                                                <div class="ctext-wrap">
-                                                    <div class="conversation-name">Frank Vickery</div>
-                                                    <div class="ctext-wrap-content">
-                                                        <p class="mb-0">
-                                                            Hey! I am available
-                                                        </p>
-                                                    </div>
-                                                    <p class="chat-time mb-0"><i class="mdi mdi-clock-outline align-middle mr-1"></i> 12:09</p>
-                                                </div>
 
-                                            </div>
-                                        </li>
 
-                                        <li class="right">
-                                            <div class="conversation-list">
-                                                <div class="ctext-wrap">
-                                                    <div class="conversation-name">Ricky Clark</div>
-                                                    <div class="ctext-wrap-content">
-                                                        <p class="mb-0">
-                                                            Hi, How are you? What about our next meeting?
-                                                        </p>
-                                                    </div>
-
-                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> 10:02</p>
-                                                </div>
-                                            </div>
-                                        </li>
-
-                                        <li>
-                                            <div class="chat-day-title">
-                                                <span class="title">Today</span>
-                                            </div>
-                                        </li>
 
 
                                     </ul>
@@ -151,12 +115,12 @@
                                     <div class="row">
                                         <div class="col">
                                             <div class="position-relative">
-                                                <input type="text" class="form-control chat-input" placeholder="Enter Message...">
+                                                <input type="text" class="form-control chat-input" v-model="message" placeholder="Enter Message...">
 
                                             </div>
                                         </div>
                                         <div class="col-auto">
-                                            <button type="submit" class="btn btn-primary chat-send w-md waves-effect waves-light"><span class="d-none d-sm-inline-block mr-2">Send</span> <i class="mdi mdi-send"></i></button>
+                                            <button type="submit" @click="sendMessage" class="btn btn-primary chat-send w-md waves-effect waves-light"><span class="d-none d-sm-inline-block mr-2">Send</span> <i class="mdi mdi-send"></i></button>
                                         </div>
                                     </div>
                                 </div>
@@ -176,7 +140,69 @@
 <script>
 export default {
     props: ['username'],
-    name: "chatComponent"
+    name: "chatComponent",
+    data: function (){
+        return {
+            dataMessages: [],
+            message: '',
+        }
+    },
+    mounted() {
+        let socket = io.connect('http://localhost:3000', {transports: ['websocket', 'polling', 'flashsocket']});
+        socket.on("message-room:App\\Events\\NewMessage", function (data){
+            this.dataMessages.push(data);
+            let messageBlock = $('.simplebar-content')[1];
+            let text = '';
+            if(data.user == this.username){
+                text = `
+                <li class="right">
+                                            <div class="conversation-list">
+                                                <div class="ctext-wrap">
+                                                    <div class="conversation-name">Ricky Clark</div>
+                                                    <div class="ctext-wrap-content">
+                                                        <p class="mb-0">
+                                                            ${data.message}
+                                                        </p>
+                                                    </div>
+
+                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> 10:02</p>
+                                                </div>
+                                            </div>
+                                        </li>
+            `;
+            }else{
+                text = `
+                <li>
+                                            <div class="conversation-list">
+                                                <div class="ctext-wrap">
+                                                    <div class="conversation-name">Ricky Clark</div>
+                                                    <div class="ctext-wrap-content">
+                                                        <p class="mb-0">
+                                                            ${data.message}
+                                                        </p>
+                                                    </div>
+
+                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> 10:02</p>
+                                                </div>
+                                            </div>
+                                        </li>
+            `;
+            }
+
+            messageBlock.innerHTML = messageBlock.innerHTML + text;
+        }.bind(this));
+    },
+    methods: {
+        sendMessage: function (){
+            axios({
+                method: 'get',
+                url: '/looechat/send-message',
+                params: {message: this.message}
+            }).then((response) => {
+                this.message = '';
+            })
+        }
+    }
 }
 </script>
 

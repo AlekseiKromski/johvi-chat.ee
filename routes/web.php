@@ -23,6 +23,7 @@ Route::group(['middleware' => 'guest'], function (){
 
 
 Route::group(['middleware' => 'auth', 'prefix' => 'looechat'], function (){
-   Route::get('/', "UserController@index");
+    Route::get('/', "UserController@index");
+    Route::get('/send-message', "UserController@sendMessage");
    Route::get("/logout", "Auth\LoginController@logout")->name('logout');
 });

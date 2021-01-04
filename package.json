@@ -18,5 +18,10 @@
         "laravel-mix": "^2.0",
         "lodash": "^4.17.4",
         "vue": "^2.5.7"
+    },
+    "dependencies": {
+        "ioredis": "^4.19.4",
+        "socket.io": "^3.0.4",
+        "socket.io-client": "^3.0.4"
     }
 }
