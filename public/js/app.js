@@ -49333,7 +49333,7 @@ exports = module.exports = __webpack_require__(42)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n.custom-chat-box[data-v-c303cd04]{\n    min-height: 450px;\n}\n.list-unstyled[data-v-c303cd04]{\n    min-height: 450px;\n}\n", ""]);
 
 // exports
 
@@ -49956,8 +49956,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             } else {
                 text = '\n                <li>\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">Ricky Clark</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> 10:02</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
             }
-
             messageBlock.innerHTML = messageBlock.innerHTML + text;
+            document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
         }.bind(this));
     },
 
@@ -50039,6 +50039,21 @@ var render = function() {
                           },
                           domProps: { value: _vm.message },
                           on: {
+                            keydown: function($event) {
+                              if (
+                                !$event.type.indexOf("key") &&
+                                _vm._k(
+                                  $event.keyCode,
+                                  "enter",
+                                  13,
+                                  $event.key,
+                                  "Enter"
+                                )
+                              ) {
+                                return null
+                              }
+                              return _vm.sendMessage()
+                            },
                             input: function($event) {
                               if ($event.target.composing) {
                                 return
@@ -50236,12 +50251,12 @@ var staticRenderFns = [
     var _vm = this
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "px-lg-2" }, [
+    return _c("div", { staticClass: "px-lg-2 custom-chat-box" }, [
       _c("div", { staticClass: "chat-conversation p-3" }, [
         _c("ul", {
           staticClass: "list-unstyled mb-0 pr-3",
           staticStyle: { "max-height": "450px" },
-          attrs: { "data-simplebar": "" }
+          attrs: { id: "chat-list", "data-simplebar": "" }
         })
       ])
     ])

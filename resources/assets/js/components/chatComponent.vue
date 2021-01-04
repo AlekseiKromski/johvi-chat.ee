@@ -99,9 +99,9 @@
                                 </div>
                             </div>
 
-                            <div class="px-lg-2">
+                            <div class="px-lg-2 custom-chat-box">
                                 <div class="chat-conversation p-3">
-                                    <ul class="list-unstyled mb-0 pr-3" data-simplebar style="max-height: 450px;">
+                                    <ul id="chat-list" class="list-unstyled mb-0 pr-3" data-simplebar style="max-height: 450px;">
 
 
 
@@ -115,7 +115,7 @@
                                     <div class="row">
                                         <div class="col">
                                             <div class="position-relative">
-                                                <input type="text" class="form-control chat-input" v-model="message" placeholder="Enter Message...">
+                                                <input type="text" @keydown.enter="sendMessage()" class="form-control chat-input" v-model="message" placeholder="Enter Message...">
 
                                             </div>
                                         </div>
@@ -188,8 +188,10 @@ export default {
                                         </li>
             `;
             }
-
             messageBlock.innerHTML = messageBlock.innerHTML + text;
+            document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop =
+                $('#chat-list .simplebar-content').height() + 150;
+
         }.bind(this));
     },
     methods: {
@@ -207,5 +209,10 @@ export default {
 </script>
 
 <style scoped>
-
+    .custom-chat-box{
+        min-height: 450px;
+    }
+    .list-unstyled{
+        min-height: 450px;
+    }
 </style>
