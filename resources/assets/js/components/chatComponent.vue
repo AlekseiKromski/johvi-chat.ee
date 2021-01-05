@@ -102,10 +102,6 @@
                             <div class="px-lg-2 custom-chat-box">
                                 <div class="chat-conversation p-3">
                                     <ul id="chat-list" class="list-unstyled mb-0 pr-3" data-simplebar style="max-height: 450px;">
-
-
-
-
                                     </ul>
                                 </div>
 
@@ -144,15 +140,47 @@ export default {
         return {
             dataMessages: [],
             message: '',
+            room_id: 1
         }
     },
     mounted() {
-        let socket = io.connect('http://178.248.138.70:3000', {transports: ['websocket', 'polling', 'flashsocket']});
-        socket.on("message-room:App\\Events\\NewMessage", function (data){
-            this.dataMessages.push(data);
+        /*
+        *
+        * */
+        axios.get('/looechat/get-messages/' + this.room_id).then(response => {
+            response.data.forEach(e => {
+                e = this.getCurrentDate(e);
+                this.dataMessages.push(e);
+                this.renderMessages(e);
+            });
+            document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
+
+            let socket = io.connect('http://178.248.138.70:3000', {transports: ['websocket', 'polling', 'flashsocket']});
+            socket.on("message-room:App\\Events\\NewMessage", function (data){
+                data.message = this.getCurrentDate(data.message);
+                this.dataMessages.push(data.message);
+                this.renderMessages(data.message);
+                document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
+
+            }.bind(this));
+        });
+    },
+    methods: {
+        sendMessage: function (){
+            if(this.message != ''){
+                axios({
+                    method: 'get',
+                    url: '/looechat/send-message',
+                    params: {message: this.message, room_id: this.room_id}
+                }).then((response) => {
+                    this.message = '';
+                })
+            }
+        },
+        renderMessages: function (data){
             let messageBlock = $('.simplebar-content')[1];
             let text = '';
-            if(data.user == this.username){
+            if(data.user.username == this.username){
                 text = `
                 <li class="right">
                                             <div class="conversation-list">
@@ -164,7 +192,7 @@ export default {
                                                         </p>
                                                     </div>
 
-                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> 10:02</p>
+                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ${data.date}</p>
                                                 </div>
                                             </div>
                                         </li>
@@ -174,36 +202,28 @@ export default {
                 <li>
                                             <div class="conversation-list">
                                                 <div class="ctext-wrap">
-                                                    <div class="conversation-name">NO USER NAME</div>
+                                                    <div class="conversation-name">${data.user.username}</div>
                                                     <div class="ctext-wrap-content">
                                                         <p class="mb-0">
                                                             ${data.message}
                                                         </p>
                                                     </div>
 
-                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> 10:02</p>
+                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ${data.date}</p>
                                                 </div>
                                             </div>
                                         </li>
             `;
             }
             messageBlock.innerHTML = messageBlock.innerHTML + text;
-            document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop =
-                $('#chat-list .simplebar-content').height() + 150;
+        },
 
-        }.bind(this));
-    },
-    methods: {
-        sendMessage: function (){
-            if(this.message != ''){
-                axios({
-                    method: 'get',
-                    url: '/looechat/send-message',
-                    params: {message: this.message}
-                }).then((response) => {
-                    this.message = '';
-                })
-            }
+        //Sys
+        getCurrentDate: function (message){
+            let date = new Date(message.created_at)
+            let cur_date = date.getHours() + ':' + date.getMinutes()
+            message.date = cur_date;
+            return message;
         }
     }
 }

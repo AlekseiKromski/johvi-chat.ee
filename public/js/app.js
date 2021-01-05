@@ -58340,10 +58340,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
-//
-//
-//
-//
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     props: ['username'],
@@ -58351,38 +58347,65 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     data: function data() {
         return {
             dataMessages: [],
-            message: ''
+            message: '',
+            room_id: 1
         };
     },
     mounted: function mounted() {
-        var socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
-        socket.on("message-room:App\\Events\\NewMessage", function (data) {
-            this.dataMessages.push(data);
-            var messageBlock = $('.simplebar-content')[1];
-            var text = '';
-            if (data.user == this.username) {
-                text = '\n                <li class="right">\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + this.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> 10:02</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
-            } else {
-                text = '\n                <li>\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">NO USER NAME</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> 10:02</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
-            }
-            messageBlock.innerHTML = messageBlock.innerHTML + text;
+        var _this = this;
+
+        /*
+        *
+        * */
+        axios.get('/looechat/get-messages/' + this.room_id).then(function (response) {
+            response.data.forEach(function (e) {
+                e = _this.getCurrentDate(e);
+                _this.dataMessages.push(e);
+                _this.renderMessages(e);
+            });
             document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
-        }.bind(this));
+
+            var socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
+            socket.on("message-room:App\\Events\\NewMessage", function (data) {
+                data.message = this.getCurrentDate(data.message);
+                this.dataMessages.push(data.message);
+                this.renderMessages(data.message);
+                document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
+            }.bind(_this));
+        });
     },
 
     methods: {
         sendMessage: function sendMessage() {
-            var _this = this;
+            var _this2 = this;
 
             if (this.message != '') {
                 axios({
                     method: 'get',
                     url: '/looechat/send-message',
-                    params: { message: this.message }
+                    params: { message: this.message, room_id: this.room_id }
                 }).then(function (response) {
-                    _this.message = '';
+                    _this2.message = '';
                 });
             }
+        },
+        renderMessages: function renderMessages(data) {
+            var messageBlock = $('.simplebar-content')[1];
+            var text = '';
+            if (data.user.username == this.username) {
+                text = '\n                <li class="right">\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + this.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ' + data.date + '</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
+            } else {
+                text = '\n                <li>\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + data.user.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ' + data.date + '</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
+            }
+            messageBlock.innerHTML = messageBlock.innerHTML + text;
+        },
+
+        //Sys
+        getCurrentDate: function getCurrentDate(message) {
+            var date = new Date(message.created_at);
+            var cur_date = date.getHours() + ':' + date.getMinutes();
+            message.date = cur_date;
+            return message;
         }
     }
 });
