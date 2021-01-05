@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\chatRoomMessages;
+use App\ChatRooms;
 use App\Events\NewMessage;
 use Illuminate\Http\Request;
 use Auth;
@@ -32,6 +33,11 @@ class UserController extends Controller
         $messages = $this->getUserWithMessages($messages);
         return response()->json($messages);
     }
+
+    public function getChatInfo($id){
+        return response()->json(ChatRooms::find($id));
+    }
+
 
     //Sys functions
     private function getUserWithMessages($messages){

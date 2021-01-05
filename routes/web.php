@@ -27,5 +27,6 @@ Route::group(['middleware' => 'auth', 'prefix' => 'looechat'], function (){
     Route::get('/', "UserController@index");
     Route::get('/send-message', "UserController@sendMessage");
     Route::get('/get-messages/{id}', "UserController@getMessages");
+    Route::get('/get-chat-info/{id}', "UserController@getChatInfo");
     Route::get("/logout", "Auth\LoginController@logout")->name('logout');
 });

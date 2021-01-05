@@ -57743,7 +57743,7 @@ exports = module.exports = __webpack_require__(87)(false);
 
 
 // module
-exports.push([module.i, "\n.custom-chat-box[data-v-c303cd04]{\n    min-height: 450px;\n}\n.list-unstyled[data-v-c303cd04]{\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-c303cd04]{\n    background-color: #df7166;\n    color: white;\n    border: none;\n}\n.btn-custom-primary[data-v-c303cd04]:focus{\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -58206,6 +58206,8 @@ module.exports = function normalizeComponent (
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent__ = __webpack_require__(97);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent__);
 //
 //
 //
@@ -58302,122 +58304,20 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
+
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-    props: ['username'],
     name: "chatComponent",
+    props: ['username'],
+    components: {
+        'chat-display-component': __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent___default.a
+    },
     data: function data() {
-        return {
-            dataMessages: [],
-            message: '',
-            room_id: 1
-        };
+        return {};
     },
-    mounted: function mounted() {
-        var _this = this;
+    mounted: function mounted() {},
 
-        /*
-        * By yakari76
-        * ------------ HOW IT WORK (for future reader) --------------
-        *
-        * This code will get all room messages by room id and render messages.
-        * Later code will be connected to the NODE.JS server with SOCKET.IO
-        * When we get new message, code will add message to global array, and render message in display
-        *
-        * For improvement will be added 2 different methods:
-        *   1. getCurrentDate() - will get message object and make perfect date (HOURS:MINUTES)
-        *   2. renderMessages() - will add new element to DOM (THAT BAD IDEA, NEED IMPROVEMENT) and
-        *       scroll your display to end of message box display
-        * */
-        axios.get('/looechat/get-messages/' + this.room_id).then(function (response) {
-            response.data.forEach(function (e) {
-                e = _this.getCurrentDate(e);
-                _this.dataMessages.push(e);
-                _this.renderMessages(e);
-            });
-            document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
-
-            var socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
-            socket.on("message-room:App\\Events\\NewMessage", function (data) {
-                data.message = this.getCurrentDate(data.message);
-                this.dataMessages.push(data.message);
-                this.renderMessages(data.message);
-                document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
-            }.bind(_this));
-        });
-    },
-
-    methods: {
-        sendMessage: function sendMessage() {
-            var _this2 = this;
-
-            if (this.message != '') {
-                axios({
-                    method: 'get',
-                    url: '/looechat/send-message',
-                    params: { message: this.message, room_id: this.room_id }
-                }).then(function (response) {
-                    _this2.message = '';
-                });
-            }
-        },
-        renderMessages: function renderMessages(data) {
-            var messageBlock = $('.simplebar-content')[1];
-            var text = '';
-            if (data.user.username == this.username) {
-                text = '\n                <li class="right">\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + this.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ' + data.date + '</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
-            } else {
-                text = '\n                <li>\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + data.user.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ' + data.date + '</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
-            }
-            messageBlock.innerHTML = messageBlock.innerHTML + text;
-        },
-
-        //Sys
-        getCurrentDate: function getCurrentDate(message) {
-            var date = new Date(message.created_at);
-            var cur_date = date.getHours() + ':' + date.getMinutes();
-            message.date = cur_date;
-            return message;
-        }
-    }
+    methods: {}
 });
 
 /***/ }),
@@ -58432,108 +58332,40 @@ var render = function() {
     _c("div", { staticClass: "main-content" }, [
       _c("div", { staticClass: "page-content" }, [
         _c("div", { staticClass: "container-fluid" }, [
-          _c("div", { staticClass: "d-lg-flex mb-4" }, [
-            _c("div", { staticClass: "chat-leftsidebar" }, [
-              _c("div", { staticClass: "p-3 border-bottom" }, [
-                _c("div", { staticClass: "media" }, [
-                  _vm._m(0),
-                  _vm._v(" "),
-                  _c("div", { staticClass: "media-body" }, [
-                    _c("h5", { staticClass: "font-size-15 mt-0 mb-1" }, [
-                      _vm._v(
-                        "\n                                        " +
-                          _vm._s(_vm.username) +
-                          "\n                                    "
-                      )
+          _c(
+            "div",
+            { staticClass: "d-lg-flex mb-4" },
+            [
+              _c("div", { staticClass: "chat-leftsidebar" }, [
+                _c("div", { staticClass: "p-3 border-bottom" }, [
+                  _c("div", { staticClass: "media" }, [
+                    _vm._m(0),
+                    _vm._v(" "),
+                    _c("div", { staticClass: "media-body" }, [
+                      _c("h5", { staticClass: "font-size-15 mt-0 mb-1" }, [
+                        _vm._v(
+                          "\n                                        " +
+                            _vm._s(_vm.username) +
+                            "\n                                    "
+                        )
+                      ]),
+                      _vm._v(" "),
+                      _vm._m(1)
                     ]),
                     _vm._v(" "),
-                    _vm._m(1)
-                  ]),
-                  _vm._v(" "),
-                  _vm._m(2)
-                ])
+                    _vm._m(2)
+                  ])
+                ]),
+                _vm._v(" "),
+                _vm._m(3)
               ]),
               _vm._v(" "),
-              _vm._m(3)
-            ]),
-            _vm._v(" "),
-            _c("div", { staticClass: "w-100 user-chat mt-4 mt-sm-0" }, [
-              _vm._m(4),
-              _vm._v(" "),
-              _vm._m(5),
-              _vm._v(" "),
-              _c("div", { staticClass: "px-lg-3" }, [
-                _c("div", { staticClass: "p-3 chat-input-section" }, [
-                  _c("div", { staticClass: "row" }, [
-                    _c("div", { staticClass: "col" }, [
-                      _c("div", { staticClass: "position-relative" }, [
-                        _c("input", {
-                          directives: [
-                            {
-                              name: "model",
-                              rawName: "v-model",
-                              value: _vm.message,
-                              expression: "message"
-                            }
-                          ],
-                          staticClass: "form-control chat-input",
-                          attrs: {
-                            type: "text",
-                            placeholder: "Enter Message..."
-                          },
-                          domProps: { value: _vm.message },
-                          on: {
-                            keydown: function($event) {
-                              if (
-                                !$event.type.indexOf("key") &&
-                                _vm._k(
-                                  $event.keyCode,
-                                  "enter",
-                                  13,
-                                  $event.key,
-                                  "Enter"
-                                )
-                              ) {
-                                return null
-                              }
-                              return _vm.sendMessage()
-                            },
-                            input: function($event) {
-                              if ($event.target.composing) {
-                                return
-                              }
-                              _vm.message = $event.target.value
-                            }
-                          }
-                        })
-                      ])
-                    ]),
-                    _vm._v(" "),
-                    _c("div", { staticClass: "col-auto" }, [
-                      _c(
-                        "button",
-                        {
-                          staticClass:
-                            "btn btn-custom-primary chat-send w-md waves-effect waves-light",
-                          attrs: { type: "submit" },
-                          on: { click: _vm.sendMessage }
-                        },
-                        [
-                          _c(
-                            "span",
-                            { staticClass: "d-none d-sm-inline-block mr-2" },
-                            [_vm._v("Send")]
-                          ),
-                          _vm._v(" "),
-                          _c("i", { staticClass: "mdi mdi-send" })
-                        ]
-                      )
-                    ])
-                  ])
-                ])
-              ])
-            ])
-          ])
+              _c("chat-display-component", {
+                attrs: { username: _vm.username }
+              })
+            ],
+            1
+          )
         ])
       ])
     ])
@@ -58655,38 +58487,356 @@ var staticRenderFns = [
         ]
       )
     ])
+  }
+]
+render._withStripped = true
+module.exports = { render: render, staticRenderFns: staticRenderFns }
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+    require("vue-hot-reload-api")      .rerender("data-v-c303cd04", module.exports)
+  }
+}
+
+/***/ }),
+/* 93 */
+/***/ (function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ }),
+/* 94 */,
+/* 95 */,
+/* 96 */,
+/* 97 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var disposed = false
+function injectStyle (ssrContext) {
+  if (disposed) return
+  __webpack_require__(98)
+}
+var normalizeComponent = __webpack_require__(90)
+/* script */
+var __vue_script__ = __webpack_require__(100)
+/* template */
+var __vue_template__ = __webpack_require__(101)
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = injectStyle
+/* scopeId */
+var __vue_scopeId__ = "data-v-54f2e038"
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __vue_script__,
+  __vue_template__,
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "resources/assets/js/components/elements/chatDisplayComponent.vue"
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-54f2e038", Component.options)
+  } else {
+    hotAPI.reload("data-v-54f2e038", Component.options)
+  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 98 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(99);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(88)("556fc51a", content, false, {});
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-54f2e038\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./chatDisplayComponent.vue", function() {
+     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-54f2e038\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./chatDisplayComponent.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 99 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(87)(false);
+// imports
+
+
+// module
+exports.push([module.i, "\n.custom-chat-box[data-v-54f2e038]{\n    min-height: 450px;\n}\n.list-unstyled[data-v-54f2e038]{\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-54f2e038]{\n    background-color: #df7166;\n    color: white;\n    border: none;\n}\n.btn-custom-primary[data-v-54f2e038]:focus{\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 100 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+    name: "chatDisplayComponent",
+    props: ['username'],
+    components: {},
+    data: function data() {
+        return {
+            dataMessages: [],
+            message: '',
+            room_id: 1,
+            chatName: ''
+        };
+    },
+    mounted: function mounted() {
+        var _this = this;
+
+        /*
+        * By yakari76
+        * ------------ HOW IT WORK (for future reader) --------------
+        *
+        * This code will get info of char room and get all room messages by room id and render messages.
+        * Later code will be connected to the NODE.JS server with SOCKET.IO
+        * When we get new message, code will add message to global array, and render message in display
+        *
+        * For improvement will be added 2 different methods:
+        *   1. getCurrentDate() - will get message object and make perfect date (HOURS:MINUTES)
+        *   2. renderMessages() - will add new element to DOM (THAT BAD IDEA, NEED IMPROVEMENT) and
+        *       scroll your display to end of message box display
+        * */
+        axios.get('/looechat/get-chat-info/' + this.room_id).then(function (response) {
+            _this.chatName = response.data.name;
+
+            axios.get('/looechat/get-messages/' + _this.room_id).then(function (response) {
+                response.data.forEach(function (e) {
+                    e = _this.getCurrentDate(e);
+                    _this.dataMessages.push(e);
+                    _this.renderMessages(e);
+                });
+                document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
+
+                var socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
+                socket.on("message-room:App\\Events\\NewMessage", function (data) {
+                    data.message = this.getCurrentDate(data.message);
+                    this.dataMessages.push(data.message);
+                    this.renderMessages(data.message);
+                    document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
+                }.bind(_this));
+            });
+        });
+    },
+
+    methods: {
+        sendMessage: function sendMessage() {
+            var _this2 = this;
+
+            if (this.message != '') {
+                axios({
+                    method: 'get',
+                    url: '/looechat/send-message',
+                    params: { message: this.message, room_id: this.room_id }
+                }).then(function (response) {
+                    _this2.message = '';
+                });
+            }
+        },
+        renderMessages: function renderMessages(data) {
+            var messageBlock = $('.simplebar-content')[1];
+            var text = '';
+            if (data.user.username == this.username) {
+                text = '\n                <li class="right">\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + this.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ' + data.date + '</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
+            } else {
+                text = '\n                <li>\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + data.user.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ' + data.date + '</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
+            }
+            messageBlock.innerHTML = messageBlock.innerHTML + text;
+        },
+
+        //Sys
+        getCurrentDate: function getCurrentDate(message) {
+            var date = new Date(message.created_at);
+            var cur_date = date.getHours() + ':' + date.getMinutes();
+            message.date = cur_date;
+            return message;
+        }
+    }
+});
+
+/***/ }),
+/* 101 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c("div", { staticClass: "w-100 user-chat mt-4 mt-sm-0" }, [
+    _c("div", { staticClass: "p-3 px-lg-4 user-chat-border" }, [
+      _c("div", { staticClass: "row" }, [
+        _c("div", { staticClass: "col-md-4 col-6" }, [
+          _c("h5", { staticClass: "font-size-15 mb-1 text-truncate" }, [
+            _vm._v(_vm._s(_vm.chatName))
+          ]),
+          _vm._v(" "),
+          _vm._m(0)
+        ]),
+        _vm._v(" "),
+        _vm._m(1)
+      ])
+    ]),
+    _vm._v(" "),
+    _vm._m(2),
+    _vm._v(" "),
+    _c("div", { staticClass: "px-lg-3" }, [
+      _c("div", { staticClass: "p-3 chat-input-section" }, [
+        _c("div", { staticClass: "row" }, [
+          _c("div", { staticClass: "col" }, [
+            _c("div", { staticClass: "position-relative" }, [
+              _c("input", {
+                directives: [
+                  {
+                    name: "model",
+                    rawName: "v-model",
+                    value: _vm.message,
+                    expression: "message"
+                  }
+                ],
+                staticClass: "form-control chat-input",
+                attrs: { type: "text", placeholder: "Enter Message..." },
+                domProps: { value: _vm.message },
+                on: {
+                  keydown: function($event) {
+                    if (
+                      !$event.type.indexOf("key") &&
+                      _vm._k($event.keyCode, "enter", 13, $event.key, "Enter")
+                    ) {
+                      return null
+                    }
+                    return _vm.sendMessage()
+                  },
+                  input: function($event) {
+                    if ($event.target.composing) {
+                      return
+                    }
+                    _vm.message = $event.target.value
+                  }
+                }
+              })
+            ])
+          ]),
+          _vm._v(" "),
+          _c("div", { staticClass: "col-auto" }, [
+            _c(
+              "button",
+              {
+                staticClass:
+                  "btn btn-custom-primary chat-send w-md waves-effect waves-light",
+                attrs: { type: "submit" },
+                on: { click: _vm.sendMessage }
+              },
+              [
+                _c("span", { staticClass: "d-none d-sm-inline-block mr-2" }, [
+                  _vm._v("Send")
+                ]),
+                _vm._v(" "),
+                _c("i", { staticClass: "mdi mdi-send" })
+              ]
+            )
+          ])
+        ])
+      ])
+    ])
+  ])
+}
+var staticRenderFns = [
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("p", { staticClass: "text-muted text-truncate mb-0" }, [
+      _c("i", { staticClass: "mdi mdi-circle text-success align-middle mr-1" }),
+      _vm._v(" В сети")
+    ])
   },
   function() {
     var _vm = this
     var _h = _vm.$createElement
     var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "p-3 px-lg-4 user-chat-border" }, [
-      _c("div", { staticClass: "row" }, [
-        _c("div", { staticClass: "col-md-4 col-6" }, [
-          _c("h5", { staticClass: "font-size-15 mb-1 text-truncate" }, [
-            _vm._v("ALPHA SERVER ROOM")
-          ]),
-          _vm._v(" "),
-          _c("p", { staticClass: "text-muted text-truncate mb-0" }, [
-            _c("i", {
-              staticClass: "mdi mdi-circle text-success align-middle mr-1"
-            }),
-            _vm._v(" В сети")
-          ])
-        ]),
-        _vm._v(" "),
-        _c("div", { staticClass: "col-md-8 col-6" }, [
-          _c(
-            "ul",
-            { staticClass: "list-inline user-chat-nav text-right mb-0" },
-            [
-              _c("li", { staticClass: "list-inline-item" }, [
-                _vm._v(
-                  "\n                                            x / x users\n                                        "
-                )
-              ])
-            ]
-          )
+    return _c("div", { staticClass: "col-md-8 col-6" }, [
+      _c("ul", { staticClass: "list-inline user-chat-nav text-right mb-0" }, [
+        _c("li", { staticClass: "list-inline-item" }, [
+          _vm._v("\n                        x / x users\n                    ")
         ])
       ])
     ])
@@ -58711,15 +58861,9 @@ module.exports = { render: render, staticRenderFns: staticRenderFns }
 if (false) {
   module.hot.accept()
   if (module.hot.data) {
-    require("vue-hot-reload-api")      .rerender("data-v-c303cd04", module.exports)
+    require("vue-hot-reload-api")      .rerender("data-v-54f2e038", module.exports)
   }
 }
-
-/***/ }),
-/* 93 */
-/***/ (function(module, exports) {
-
-// removed by extract-text-webpack-plugin
 
 /***/ })
 /******/ ]);
