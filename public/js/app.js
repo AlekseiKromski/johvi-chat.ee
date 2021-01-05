@@ -58355,7 +58355,17 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         var _this = this;
 
         /*
+        * By yakari76
+        * ------------ HOW IT WORK (for future reader) --------------
         *
+        * This code will get all room messages by room id and render messages.
+        * Later code will be connected to the NODE.JS server with SOCKET.IO
+        * When we get new message, code will add message to global array, and render message in display
+        *
+        * For improvement will be added 2 different methods:
+        *   1. getCurrentDate() - will get message object and make perfect date (HOURS:MINUTES)
+        *   2. renderMessages() - will add new element to DOM (THAT BAD IDEA, NEED IMPROVEMENT) and
+        *       scroll your display to end of message box display
         * */
         axios.get('/looechat/get-messages/' + this.room_id).then(function (response) {
             response.data.forEach(function (e) {
