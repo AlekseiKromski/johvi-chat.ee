@@ -116,11 +116,10 @@
                                         <div class="col">
                                             <div class="position-relative">
                                                 <input type="text" @keydown.enter="sendMessage()" class="form-control chat-input" v-model="message" placeholder="Enter Message...">
-
                                             </div>
                                         </div>
                                         <div class="col-auto">
-                                            <button type="submit" @click="sendMessage" class="btn btn-primary chat-send w-md waves-effect waves-light"><span class="d-none d-sm-inline-block mr-2">Send</span> <i class="mdi mdi-send"></i></button>
+                                            <button type="submit" @click="sendMessage" class="btn btn-custom-primary chat-send w-md waves-effect waves-light"><span class="d-none d-sm-inline-block mr-2">Send</span> <i class="mdi mdi-send"></i></button>
                                         </div>
                                     </div>
                                 </div>
@@ -196,13 +195,15 @@ export default {
     },
     methods: {
         sendMessage: function (){
-            axios({
-                method: 'get',
-                url: '/looechat/send-message',
-                params: {message: this.message}
-            }).then((response) => {
-                this.message = '';
-            })
+            if(this.message != ''){
+                axios({
+                    method: 'get',
+                    url: '/looechat/send-message',
+                    params: {message: this.message}
+                }).then((response) => {
+                    this.message = '';
+                })
+            }
         }
     }
 }
@@ -214,5 +215,13 @@ export default {
     }
     .list-unstyled{
         min-height: 450px;
+    }
+    .btn-custom-primary{
+        background-color: #df7166;
+        color: white;
+        border: none;
+    }
+    .btn-custom-primary:focus{
+        box-shadow: 0 0 0 3px rgba(223,113,102,.5);
     }
 </style>
