@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\ChatRoomMember;
 use App\chatRoomMessages;
 use App\ChatRooms;
 use App\Events\NewMessage;
@@ -38,6 +39,31 @@ class UserController extends Controller
         return response()->json(ChatRooms::find($id));
     }
 
+    public function getUserChats(){
+        $chats = ChatRoomMember::where('user_id', '=', Auth::id())->orderBy('id', 'desc')->get();
+        foreach ($chats as $chat){
+            $chat->user = $chat->user;
+            $chat->chatroom = $chat->chatroom;
+        }
+        return response()->json($chats);
+    }
+
+    public function joinUserIntoChat($id){
+        if (count(ChatRoomMember::where('user_id', '=', Auth::id())->where('chat_room_id', '=', $id)->get()) != 0){
+            return response()->json(['error' => 'вы уже находитесь в чате'], 405);
+        }
+        if(ChatRoomMember::find($id) == null){
+            return response()->json(['error' => 'чата не существует'], 404);
+        }
+        if(!$chat = ChatRoomMember::create([
+            'user_id' => Auth::id(),
+            'chat_room_id' => $id
+        ])){
+            //Will return json for display error
+            return abort(404);
+        }
+        return response()->json($chat);
+    }
 
     //Sys functions
     private function getUserWithMessages($messages){

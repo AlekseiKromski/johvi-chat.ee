@@ -19,7 +19,7 @@
 
         <div class="px-lg-2 custom-chat-box">
             <div class="chat-conversation p-3">
-                <ul id="chat-list" class="list-unstyled mb-0 pr-3" data-simplebar style="max-height: 450px;">
+                <ul id="chat-display" class="list-unstyled mb-0 pr-3" data-simplebar style="max-height: 450px;">
                 </ul>
             </div>
 
@@ -42,6 +42,7 @@
 </template>
 
 <script>
+import EventBus from "../../eventBus";
 export default {
     name: "chatDisplayComponent",
     props: ['username'],
@@ -79,15 +80,14 @@ export default {
                     this.dataMessages.push(e);
                     this.renderMessages(e);
                 });
-                document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
+                document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
 
-                let socket = io.connect('http://178.248.138.70:3000', {transports: ['websocket', 'polling', 'flashsocket']});
-                socket.on("message-room:App\\Events\\NewMessage", function (data){
+                //Listen 'message-delivered' event
+                EventBus.$on('message-delivered', function (data){
                     data.message = this.getCurrentDate(data.message);
                     this.dataMessages.push(data.message);
                     this.renderMessages(data.message);
-                    document.querySelector('#chat-list').SimpleBar.getScrollElement().scrollTop = $('#chat-list .simplebar-content').height() + 150;
-
+                    document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
                 }.bind(this));
             })
         });
