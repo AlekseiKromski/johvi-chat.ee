@@ -16,9 +16,9 @@
                         <!-- Left side chat component -->
                         <left-side-chat-component v-bind:username="username"></left-side-chat-component>
 
-                        <default-chat-display-component v-if="chatScreen == 0"></default-chat-display-component>
+                        <default-chat-display-component v-if="room_id == 0"></default-chat-display-component>
                         <!-- Chat component -->
-                        <chat-display-component v-bind:username="username" v-if="chatScreen != 0"></chat-display-component>
+                        <chat-display-component v-bind:username="username" v-bind:room_id="room_id" v-if="room_id != 0"></chat-display-component>
                     </div>
                     <!-- end row -->
 
@@ -46,13 +46,14 @@ export default {
     },
     data: function (){
         return {
-            chatScreen: 0,
+            room_id: 0,
             error: false,
             error_message : '',
         }
     },
     mounted() {
         EventBus.$on('error', message => {this.showError(message)});
+        EventBus.$on('open-chat-display', room_id => {this.openChatDisplay(room_id)});
         let socket = io.connect('http://178.248.138.70:3000', {transports: ['websocket', 'polling', 'flashsocket']});
         socket.on("message-room:App\\Events\\NewMessage", function (data){
             EventBus.$emit('message-delivered', data);
@@ -66,6 +67,9 @@ export default {
                 this.error = false;
                 this.error_message = '';
             }.bind(this), 3500)
+        },
+        openChatDisplay: function (room_id){
+            this.room_id = room_id;
         }
     }
 }

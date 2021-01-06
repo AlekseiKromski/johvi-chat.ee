@@ -19,7 +19,23 @@
 
         <div class="px-lg-2 custom-chat-box">
             <div class="chat-conversation p-3">
-                <ul id="chat-display" class="list-unstyled mb-0 pr-3" data-simplebar style="max-height: 450px;">
+                <ul id="chat-display" class="list-unstyled chat-list" >
+                    <simplebar style="max-height: 475px;">
+                        <li class="right" v-for="message in dataMessages">
+                            <div class="conversation-list">
+                                <div class="ctext-wrap">
+                                    <div class="conversation-name">{{message.user.username}}</div>
+                                    <div class="ctext-wrap-content">
+                                        <p class="mb-0">
+                                            {{ message.message}}
+                                        </p>
+                                    </div>
+
+                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> 123</p>
+                                </div>
+                            </div>
+                        </li>
+                    </simplebar>
                 </ul>
             </div>
 
@@ -43,17 +59,19 @@
 
 <script>
 import EventBus from "../../eventBus";
+
+import simplebar from 'simplebar-vue';
+import 'simplebar/dist/simplebar.min.css';
 export default {
     name: "chatDisplayComponent",
-    props: ['username'],
+    props: ['username', 'room_id'],
     components: {
-
+        simplebar
     },
     data: function (){
         return {
             dataMessages: [],
             message: '',
-            room_id: 1,
             chatName: '',
         }
     },
@@ -78,9 +96,9 @@ export default {
                 response.data.forEach(e => {
                     e = this.getCurrentDate(e);
                     this.dataMessages.push(e);
-                    this.renderMessages(e);
+                    //this.renderMessages(e);
                 });
-                document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
+                //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
 
                 //Listen 'message-delivered' event
                 EventBus.$on('message-delivered', function (data){

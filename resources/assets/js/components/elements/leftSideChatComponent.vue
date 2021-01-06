@@ -33,11 +33,11 @@
                         You dont have chats 😔
                     </p>
 
-                    <ul id="chat-list-id" class="list-unstyled chat-list" style="max-height: 475px;">
-                        <simplebar>
+                    <ul id="chat-list-id" class="list-unstyled chat-list" >
+                        <simplebar style="max-height: 475px;">
                             <!--class="active"-->
-                            <li  v-for="chat in chats" v-bind:id="chats.id">
-                                <a href="#">
+                            <li  v-for="chat in chats" v-bind:id="chat.chatroom.id" v-on:click.prevent="openChatDisplay($event)">
+                                <a href="">
                                     <div class="media">
 
                                         <div class="user-img online align-self-center mr-3">
@@ -98,6 +98,11 @@ export default {
             }.bind(this))
         });
     },
+    methods:{
+        openChatDisplay: function (event){
+            EventBus.$emit('open-chat-display', event.currentTarget.id);
+        }
+    }
 }
 </script>
 

@@ -53850,7 +53850,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     },
     data: function data() {
         return {
-            chatScreen: 0,
+            room_id: 0,
             error: false,
             error_message: ''
         };
@@ -53860,6 +53860,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
         __WEBPACK_IMPORTED_MODULE_3__eventBus__["a" /* default */].$on('error', function (message) {
             _this.showError(message);
+        });
+        __WEBPACK_IMPORTED_MODULE_3__eventBus__["a" /* default */].$on('open-chat-display', function (room_id) {
+            _this.openChatDisplay(room_id);
         });
         var socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
         socket.on("message-room:App\\Events\\NewMessage", function (data) {
@@ -53875,6 +53878,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 this.error = false;
                 this.error_message = '';
             }.bind(this), 3500);
+        },
+        openChatDisplay: function openChatDisplay(room_id) {
+            this.room_id = room_id;
         }
     }
 });
@@ -53977,6 +53983,9 @@ exports.push([module.i, "\n.custom-chat-box[data-v-54f2e038]{\n    min-height: 4
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__eventBus__ = __webpack_require__(11);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__ = __webpack_require__(210);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_simplebar_dist_simplebar_min_css__ = __webpack_require__(290);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_simplebar_dist_simplebar_min_css___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_simplebar_dist_simplebar_min_css__);
 //
 //
 //
@@ -54020,17 +54029,37 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+
+
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     name: "chatDisplayComponent",
-    props: ['username'],
-    components: {},
+    props: ['username', 'room_id'],
+    components: {
+        simplebar: __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
+    },
     data: function data() {
         return {
             dataMessages: [],
             message: '',
-            room_id: 1,
             chatName: ''
         };
     },
@@ -54057,9 +54086,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 response.data.forEach(function (e) {
                     e = _this.getCurrentDate(e);
                     _this.dataMessages.push(e);
-                    _this.renderMessages(e);
+                    //this.renderMessages(e);
                 });
-                document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
+                //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
 
                 //Listen 'message-delivered' event
                 __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
@@ -54090,9 +54119,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             var messageBlock = $('.simplebar-content')[1];
             var text = '';
             if (data.user.username == this.username) {
-                text = "\n                <li class=\"right\">\n                                            <div class=\"conversation-list\">\n                                                <div class=\"ctext-wrap\">\n                                                    <div class=\"conversation-name\">" + this.username + "</div>\n                                                    <div class=\"ctext-wrap-content\">\n                                                        <p class=\"mb-0\">\n                                                            " + data.message + "\n                                                        </p>\n                                                    </div>\n\n                                                    <p class=\"chat-time mb-0\"><i class=\"bx bx-time-five align-middle mr-1\"></i> " + data.date + "</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ";
+                text = '\n                <li class="right">\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + this.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ' + data.date + '</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
             } else {
-                text = "\n                <li>\n                                            <div class=\"conversation-list\">\n                                                <div class=\"ctext-wrap\">\n                                                    <div class=\"conversation-name\">" + data.user.username + "</div>\n                                                    <div class=\"ctext-wrap-content\">\n                                                        <p class=\"mb-0\">\n                                                            " + data.message + "\n                                                        </p>\n                                                    </div>\n\n                                                    <p class=\"chat-time mb-0\"><i class=\"bx bx-time-five align-middle mr-1\"></i> " + data.date + "</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ";
+                text = '\n                <li>\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + data.user.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ' + data.date + '</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
             }
             messageBlock.innerHTML = messageBlock.innerHTML + text;
         },
@@ -54130,7 +54159,53 @@ var render = function() {
       ])
     ]),
     _vm._v(" "),
-    _vm._m(2),
+    _c("div", { staticClass: "px-lg-2 custom-chat-box" }, [
+      _c("div", { staticClass: "chat-conversation p-3" }, [
+        _c(
+          "ul",
+          {
+            staticClass: "list-unstyled chat-list",
+            attrs: { id: "chat-display" }
+          },
+          [
+            _c(
+              "simplebar",
+              { staticStyle: { "max-height": "475px" } },
+              _vm._l(_vm.dataMessages, function(message) {
+                return _c("li", { staticClass: "right" }, [
+                  _c("div", { staticClass: "conversation-list" }, [
+                    _c("div", { staticClass: "ctext-wrap" }, [
+                      _c("div", { staticClass: "conversation-name" }, [
+                        _vm._v(_vm._s(message.user.username))
+                      ]),
+                      _vm._v(" "),
+                      _c("div", { staticClass: "ctext-wrap-content" }, [
+                        _c("p", { staticClass: "mb-0" }, [
+                          _vm._v(
+                            "\n                                        " +
+                              _vm._s(message.message) +
+                              "\n                                    "
+                          )
+                        ])
+                      ]),
+                      _vm._v(" "),
+                      _c("p", { staticClass: "chat-time mb-0" }, [
+                        _c("i", {
+                          staticClass: "bx bx-time-five align-middle mr-1"
+                        }),
+                        _vm._v(" 123")
+                      ])
+                    ])
+                  ])
+                ])
+              }),
+              0
+            )
+          ],
+          1
+        )
+      ])
+    ]),
     _vm._v(" "),
     _c("div", { staticClass: "px-lg-3" }, [
       _c("div", { staticClass: "p-3 chat-input-section" }, [
@@ -54212,20 +54287,6 @@ var staticRenderFns = [
         _c("li", { staticClass: "list-inline-item" }, [
           _vm._v("\n                        x / x users\n                    ")
         ])
-      ])
-    ])
-  },
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "px-lg-2 custom-chat-box" }, [
-      _c("div", { staticClass: "chat-conversation p-3" }, [
-        _c("ul", {
-          staticClass: "list-unstyled mb-0 pr-3",
-          staticStyle: { "max-height": "450px" },
-          attrs: { id: "chat-display", "data-simplebar": "" }
-        })
       ])
     ])
   }
@@ -54325,7 +54386,7 @@ exports = module.exports = __webpack_require__(8)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -54443,6 +54504,12 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 });
             }.bind(_this));
         });
+    },
+
+    methods: {
+        openChatDisplay: function openChatDisplay(event) {
+            __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('open-chat-display', event.currentTarget.id);
+        }
     }
 });
 
@@ -54497,59 +54564,72 @@ var render = function() {
               "ul",
               {
                 staticClass: "list-unstyled chat-list",
-                staticStyle: { "max-height": "475px" },
                 attrs: { id: "chat-list-id" }
               },
               [
                 _c(
                   "simplebar",
+                  { staticStyle: { "max-height": "475px" } },
                   _vm._l(_vm.chats, function(chat) {
-                    return _c("li", { attrs: { id: _vm.chats.id } }, [
-                      _c("a", { attrs: { href: "#" } }, [
-                        _c("div", { staticClass: "media" }, [
-                          _c(
-                            "div",
-                            {
-                              staticClass:
-                                "user-img online align-self-center mr-3"
-                            },
-                            [
-                              _c("img", {
-                                staticClass: "rounded-circle avatar-xs",
-                                attrs: {
-                                  src: "chat/images/users/avatar-2.jpg",
-                                  alt: ""
-                                }
-                              }),
-                              _vm._v(" "),
-                              _c("span", { staticClass: "user-status" })
-                            ]
-                          ),
-                          _vm._v(" "),
-                          _c(
-                            "div",
-                            { staticClass: "media-body overflow-hidden" },
-                            [
-                              _c(
-                                "h5",
-                                {
-                                  staticClass: "text-truncate font-size-14 mb-1"
-                                },
-                                [_vm._v(_vm._s(chat.chatroom.name))]
-                              ),
-                              _vm._v(" "),
-                              _c("p", { staticClass: "text-truncate mb-0" }, [
-                                _vm._v("Hey! there I'm available")
-                              ])
-                            ]
-                          ),
-                          _vm._v(" "),
-                          _c("div", { staticClass: "font-size-11" }, [
-                            _vm._v("xx min")
+                    return _c(
+                      "li",
+                      {
+                        attrs: { id: chat.chatroom.id },
+                        on: {
+                          click: function($event) {
+                            $event.preventDefault()
+                            return _vm.openChatDisplay($event)
+                          }
+                        }
+                      },
+                      [
+                        _c("a", { attrs: { href: "" } }, [
+                          _c("div", { staticClass: "media" }, [
+                            _c(
+                              "div",
+                              {
+                                staticClass:
+                                  "user-img online align-self-center mr-3"
+                              },
+                              [
+                                _c("img", {
+                                  staticClass: "rounded-circle avatar-xs",
+                                  attrs: {
+                                    src: "chat/images/users/avatar-2.jpg",
+                                    alt: ""
+                                  }
+                                }),
+                                _vm._v(" "),
+                                _c("span", { staticClass: "user-status" })
+                              ]
+                            ),
+                            _vm._v(" "),
+                            _c(
+                              "div",
+                              { staticClass: "media-body overflow-hidden" },
+                              [
+                                _c(
+                                  "h5",
+                                  {
+                                    staticClass:
+                                      "text-truncate font-size-14 mb-1"
+                                  },
+                                  [_vm._v(_vm._s(chat.chatroom.name))]
+                                ),
+                                _vm._v(" "),
+                                _c("p", { staticClass: "text-truncate mb-0" }, [
+                                  _vm._v("Hey! there I'm available")
+                                ])
+                              ]
+                            ),
+                            _vm._v(" "),
+                            _c("div", { staticClass: "font-size-11" }, [
+                              _vm._v("xx min")
+                            ])
                           ])
                         ])
-                      ])
-                    ])
+                      ]
+                    )
                   }),
                   0
                 )
@@ -54737,6 +54817,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -54787,6 +54868,21 @@ var render = function() {
                       }
                     },
                     [_vm._v("ALPHA TEST SERVER")]
+                  ),
+                  _vm._v(" "),
+                  _c(
+                    "button",
+                    {
+                      staticClass: "btn btn-outline-primary",
+                      attrs: { id: "2", href: "" },
+                      on: {
+                        click: function($event) {
+                          $event.preventDefault()
+                          return _vm.joinAction($event)
+                        }
+                      }
+                    },
+                    [_vm._v("ALPHA TEST SERVER2")]
                   )
                 ])
               ])
@@ -54833,13 +54929,13 @@ var render = function() {
                 attrs: { username: _vm.username }
               }),
               _vm._v(" "),
-              _vm.chatScreen == 0
+              _vm.room_id == 0
                 ? _c("default-chat-display-component")
                 : _vm._e(),
               _vm._v(" "),
-              _vm.chatScreen != 0
+              _vm.room_id != 0
                 ? _c("chat-display-component", {
-                    attrs: { username: _vm.username }
+                    attrs: { username: _vm.username, room_id: _vm.room_id }
                   })
                 : _vm._e()
             ],

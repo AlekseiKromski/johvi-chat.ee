@@ -8,6 +8,7 @@
                     <div class="row justify-content-center">
                         <div class="col-12">
                             <button id="1" href="" @click.prevent="joinAction($event)" class="btn btn-outline-primary">ALPHA TEST SERVER</button>
+                            <button id="2" href="" @click.prevent="joinAction($event)" class="btn btn-outline-primary">ALPHA TEST SERVER2</button>
                         </div>
                     </div>
                 </div>
