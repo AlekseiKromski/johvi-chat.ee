@@ -32,7 +32,8 @@
                         You dont have chats 😔
                     </p>
                     <ul class="list-unstyled chat-list" data-simplebar style="max-height: 475px;">
-                        <li class="active" v-for="chat in chats" v-bind:id="chats.id">
+                        <!--class="active"-->
+                        <li  v-for="chat in chats" v-bind:id="chats.id">
                             <a href="#">
                                 <div class="media">
 

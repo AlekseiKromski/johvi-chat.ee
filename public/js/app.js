@@ -58737,7 +58737,7 @@ exports = module.exports = __webpack_require__(12)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -58749,6 +58749,7 @@ exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__eventBus__ = __webpack_require__(107);
+//
 //
 //
 //
@@ -58898,39 +58899,29 @@ var render = function() {
                 attrs: { "data-simplebar": "" }
               },
               _vm._l(_vm.chats, function(chat) {
-                return _c(
-                  "li",
-                  { staticClass: "active", attrs: { id: _vm.chats.id } },
-                  [
-                    _c("a", { attrs: { href: "#" } }, [
-                      _c("div", { staticClass: "media" }, [
-                        _vm._m(3, true),
-                        _vm._v(" "),
+                return _c("li", { attrs: { id: _vm.chats.id } }, [
+                  _c("a", { attrs: { href: "#" } }, [
+                    _c("div", { staticClass: "media" }, [
+                      _vm._m(3, true),
+                      _vm._v(" "),
+                      _c("div", { staticClass: "media-body overflow-hidden" }, [
                         _c(
-                          "div",
-                          { staticClass: "media-body overflow-hidden" },
-                          [
-                            _c(
-                              "h5",
-                              {
-                                staticClass: "text-truncate font-size-14 mb-1"
-                              },
-                              [_vm._v(_vm._s(chat.chatroom.name))]
-                            ),
-                            _vm._v(" "),
-                            _c("p", { staticClass: "text-truncate mb-0" }, [
-                              _vm._v("Hey! there I'm available")
-                            ])
-                          ]
+                          "h5",
+                          { staticClass: "text-truncate font-size-14 mb-1" },
+                          [_vm._v(_vm._s(chat.chatroom.name))]
                         ),
                         _vm._v(" "),
-                        _c("div", { staticClass: "font-size-11" }, [
-                          _vm._v("xx min")
+                        _c("p", { staticClass: "text-truncate mb-0" }, [
+                          _vm._v("Hey! there I'm available")
                         ])
+                      ]),
+                      _vm._v(" "),
+                      _c("div", { staticClass: "font-size-11" }, [
+                        _vm._v("xx min")
                       ])
                     ])
-                  ]
-                )
+                  ])
+                ])
               }),
               0
             )
