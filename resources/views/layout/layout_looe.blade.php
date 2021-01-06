@@ -26,13 +26,14 @@
 
 <!-- JAVASCRIPT -->
 <script src="{{asset('chat/libs/jquery/jquery.min.js')}}"></script>
+<script src="{{asset('js/app.js')}}"></script>
 <script src="{{asset('chat/libs/bootstrap/js/bootstrap.bundle.min.js')}}"></script>
 <script src="{{asset('chat/libs/metismenu/metisMenu.min.js')}}"></script>
-<script src="{{asset('chat/libs/simplebar/simplebar.min.js')}}"></script>
+<!--<script src="{{asset('chat/libs/simplebar/simplebar.min.js')}}"></script>-->
 <script src="{{asset('chat/libs/node-waves/waves.min.js')}}"></script>
-
 <script src="{{asset('chat/js/app.js')}}"></script>
-<script src="{{asset('js/app.js')}}"></script>
+
+
 
 </body>
 </html>

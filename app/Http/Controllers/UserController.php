@@ -52,7 +52,7 @@ class UserController extends Controller
         if (count(ChatRoomMember::where('user_id', '=', Auth::id())->where('chat_room_id', '=', $id)->get()) != 0){
             return response()->json(['error' => 'вы уже находитесь в чате'], 405);
         }
-        if(ChatRoomMember::find($id) == null){
+        if(ChatRooms::find($id) == null){
             return response()->json(['error' => 'чата не существует'], 404);
         }
         if(!$chat = ChatRoomMember::create([
@@ -62,6 +62,8 @@ class UserController extends Controller
             //Will return json for display error
             return abort(404);
         }
+        $chat->user = $chat->user;
+        $chat->chatroom = $chat->chatroom;
         return response()->json($chat);
     }
 

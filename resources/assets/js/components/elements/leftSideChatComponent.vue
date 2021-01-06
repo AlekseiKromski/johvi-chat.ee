@@ -1,4 +1,5 @@
 <template>
+
     <div class="chat-leftsidebar">
         <div class="p-3 border-bottom">
             <div class="media">
@@ -31,25 +32,28 @@
                     <p class="px-3 mb-3" v-if="chats.length == 0">
                         You dont have chats 😔
                     </p>
-                    <ul class="list-unstyled chat-list" data-simplebar style="max-height: 475px;">
-                        <!--class="active"-->
-                        <li  v-for="chat in chats" v-bind:id="chats.id">
-                            <a href="#">
-                                <div class="media">
 
-                                    <div class="user-img online align-self-center mr-3">
-                                        <img src="chat/images/users/avatar-2.jpg" class="rounded-circle avatar-xs" alt="">
-                                        <span class="user-status"></span>
-                                    </div>
+                    <ul id="chat-list-id" class="list-unstyled chat-list" style="max-height: 475px;">
+                        <simplebar>
+                            <!--class="active"-->
+                            <li  v-for="chat in chats" v-bind:id="chats.id">
+                                <a href="#">
+                                    <div class="media">
 
-                                    <div class="media-body overflow-hidden">
-                                        <h5 class="text-truncate font-size-14 mb-1">{{ chat.chatroom.name }}</h5>
-                                        <p class="text-truncate mb-0">Hey! there I'm available</p>
+                                        <div class="user-img online align-self-center mr-3">
+                                            <img src="chat/images/users/avatar-2.jpg" class="rounded-circle avatar-xs" alt="">
+                                            <span class="user-status"></span>
+                                        </div>
+
+                                        <div class="media-body overflow-hidden">
+                                            <h5 class="text-truncate font-size-14 mb-1">{{ chat.chatroom.name }}</h5>
+                                            <p class="text-truncate mb-0">Hey! there I'm available</p>
+                                        </div>
+                                        <div class="font-size-11">xx min</div>
                                     </div>
-                                    <div class="font-size-11">xx min</div>
-                                </div>
-                            </a>
-                        </li>
+                                </a>
+                            </li>
+                        </simplebar>
                     </ul>
                 </div>
             </div>
@@ -59,9 +63,15 @@
 
 <script>
 import EventBus from "../../eventBus";
+
+import simplebar from 'simplebar-vue';
+import 'simplebar/dist/simplebar.min.css';
 export default {
     name: "leftSideChatComponent",
     props: ['username'],
+    components: {
+        simplebar
+    },
     data: function (){
         return {
             chats: []
@@ -72,6 +82,7 @@ export default {
             response.data.forEach(e => {
                 this.chats.push(e);
             })
+
             EventBus.$on('join-chat-action', function (id){
                 axios.get('/looechat/join/' + id).then(response => {
                     if(response.status == 200){
