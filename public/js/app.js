@@ -54052,7 +54052,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     name: "chatDisplayComponent",
-    props: ['username', 'room_id'],
+    props: ['username'],
     components: {
         simplebar: __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
     },
@@ -54060,7 +54060,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         return {
             dataMessages: [],
             message: '',
-            chatName: ''
+            chatName: '',
+            room_id: 0
         };
     },
     mounted: function mounted() {
@@ -54079,25 +54080,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         *   2. renderMessages() - will add new element to DOM (THAT BAD IDEA, NEED IMPROVEMENT) and
         *       scroll your display to end of message box display
         * */
-        axios.get('/looechat/get-chat-info/' + this.room_id).then(function (response) {
-            _this.chatName = response.data.name;
 
-            axios.get('/looechat/get-messages/' + _this.room_id).then(function (response) {
-                response.data.forEach(function (e) {
-                    e = _this.getCurrentDate(e);
-                    _this.dataMessages.push(e);
-                    //this.renderMessages(e);
-                });
-                //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
-
-                //Listen 'message-delivered' event
-                __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
-                    data.message = this.getCurrentDate(data.message);
-                    this.dataMessages.push(data.message);
-                    this.renderMessages(data.message);
-                    document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
-                }.bind(_this));
-            });
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('open-chat-display', function (room_id) {
+            return _this.showChatDisplay(room_id);
         });
     },
 
@@ -54115,15 +54100,29 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 });
             }
         },
-        renderMessages: function renderMessages(data) {
-            var messageBlock = $('.simplebar-content')[1];
-            var text = '';
-            if (data.user.username == this.username) {
-                text = '\n                <li class="right">\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + this.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ' + data.date + '</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
-            } else {
-                text = '\n                <li>\n                                            <div class="conversation-list">\n                                                <div class="ctext-wrap">\n                                                    <div class="conversation-name">' + data.user.username + '</div>\n                                                    <div class="ctext-wrap-content">\n                                                        <p class="mb-0">\n                                                            ' + data.message + '\n                                                        </p>\n                                                    </div>\n\n                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ' + data.date + '</p>\n                                                </div>\n                                            </div>\n                                        </li>\n            ';
-            }
-            messageBlock.innerHTML = messageBlock.innerHTML + text;
+        showChatDisplay: function showChatDisplay(room_id) {
+            var _this3 = this;
+
+            this.room_id = room_id;
+            this.dataMessages = [];
+            axios.get('/looechat/get-chat-info/' + this.room_id).then(function (response) {
+                _this3.chatName = response.data.name;
+
+                axios.get('/looechat/get-messages/' + _this3.room_id).then(function (response) {
+                    response.data.forEach(function (e) {
+                        e = _this3.getCurrentDate(e);
+                        _this3.dataMessages.push(e);
+                    });
+
+                    //Listen 'message-delivered' event
+                    __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
+                        console.log('ok');
+                        data.message = this.getCurrentDate(data.message);
+                        this.dataMessages.push(data.message);
+                        //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
+                    }.bind(_this3));
+                });
+            });
         },
 
         //Sys
@@ -54163,14 +54162,15 @@ var render = function() {
       _c("div", { staticClass: "chat-conversation p-3" }, [
         _c(
           "ul",
-          {
-            staticClass: "list-unstyled chat-list",
-            attrs: { id: "chat-display" }
-          },
+          { staticClass: "list-unstyled chat-list" },
           [
             _c(
               "simplebar",
-              { staticStyle: { "max-height": "475px" } },
+              {
+                ref: "scrollElement",
+                staticStyle: { "max-height": "475px" },
+                attrs: { id: "chat-display" }
+              },
               _vm._l(_vm.dataMessages, function(message) {
                 return _c("li", { staticClass: "right" }, [
                   _c("div", { staticClass: "conversation-list" }, [
@@ -54929,15 +54929,28 @@ var render = function() {
                 attrs: { username: _vm.username }
               }),
               _vm._v(" "),
-              _vm.room_id == 0
-                ? _c("default-chat-display-component")
-                : _vm._e(),
+              _c("default-chat-display-component", {
+                directives: [
+                  {
+                    name: "show",
+                    rawName: "v-show",
+                    value: _vm.room_id == 0,
+                    expression: "room_id == 0"
+                  }
+                ]
+              }),
               _vm._v(" "),
-              _vm.room_id != 0
-                ? _c("chat-display-component", {
-                    attrs: { username: _vm.username, room_id: _vm.room_id }
-                  })
-                : _vm._e()
+              _c("chat-display-component", {
+                directives: [
+                  {
+                    name: "show",
+                    rawName: "v-show",
+                    value: _vm.room_id != 0,
+                    expression: "room_id != 0"
+                  }
+                ],
+                attrs: { username: _vm.username }
+              })
             ],
             1
           )

@@ -16,9 +16,9 @@
                         <!-- Left side chat component -->
                         <left-side-chat-component v-bind:username="username"></left-side-chat-component>
 
-                        <default-chat-display-component v-if="room_id == 0"></default-chat-display-component>
+                        <default-chat-display-component v-show="room_id == 0"></default-chat-display-component>
                         <!-- Chat component -->
-                        <chat-display-component v-bind:username="username" v-bind:room_id="room_id" v-if="room_id != 0"></chat-display-component>
+                        <chat-display-component v-bind:username="username" v-show="room_id != 0"></chat-display-component>
                     </div>
                     <!-- end row -->
 

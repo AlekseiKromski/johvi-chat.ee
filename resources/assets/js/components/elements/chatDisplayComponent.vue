@@ -19,8 +19,8 @@
 
         <div class="px-lg-2 custom-chat-box">
             <div class="chat-conversation p-3">
-                <ul id="chat-display" class="list-unstyled chat-list" >
-                    <simplebar style="max-height: 475px;">
+                <ul class="list-unstyled chat-list" >
+                    <simplebar ref="scrollElement" id="chat-display" style="max-height: 475px;">
                         <li class="right" v-for="message in dataMessages">
                             <div class="conversation-list">
                                 <div class="ctext-wrap">
@@ -64,7 +64,7 @@ import simplebar from 'simplebar-vue';
 import 'simplebar/dist/simplebar.min.css';
 export default {
     name: "chatDisplayComponent",
-    props: ['username', 'room_id'],
+    props: ['username'],
     components: {
         simplebar
     },
@@ -73,6 +73,7 @@ export default {
             dataMessages: [],
             message: '',
             chatName: '',
+            room_id: 0
         }
     },
     mounted() {
@@ -89,27 +90,8 @@ export default {
         *   2. renderMessages() - will add new element to DOM (THAT BAD IDEA, NEED IMPROVEMENT) and
         *       scroll your display to end of message box display
         * */
-        axios.get('/looechat/get-chat-info/' + this.room_id).then(response =>{
-            this.chatName = response.data.name;
 
-            axios.get('/looechat/get-messages/' + this.room_id).then(response => {
-                response.data.forEach(e => {
-                    e = this.getCurrentDate(e);
-                    this.dataMessages.push(e);
-                    //this.renderMessages(e);
-                });
-                //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
-
-                //Listen 'message-delivered' event
-                EventBus.$on('message-delivered', function (data){
-                    data.message = this.getCurrentDate(data.message);
-                    this.dataMessages.push(data.message);
-                    this.renderMessages(data.message);
-                    document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
-                }.bind(this));
-            })
-        });
-
+        EventBus.$on('open-chat-display', room_id => this.showChatDisplay(room_id));
     },
     methods: {
         sendMessage: function (){
@@ -123,45 +105,27 @@ export default {
                 })
             }
         },
-        renderMessages: function (data){
-            let messageBlock = $('.simplebar-content')[1];
-            let text = '';
-            if(data.user.username == this.username){
-                text = `
-                <li class="right">
-                                            <div class="conversation-list">
-                                                <div class="ctext-wrap">
-                                                    <div class="conversation-name">${this.username}</div>
-                                                    <div class="ctext-wrap-content">
-                                                        <p class="mb-0">
-                                                            ${data.message}
-                                                        </p>
-                                                    </div>
+        showChatDisplay: function (room_id){
+            this.room_id = room_id;
+            this.dataMessages = [];
+            axios.get('/looechat/get-chat-info/' + this.room_id).then(response =>{
+                this.chatName = response.data.name;
 
-                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ${data.date}</p>
-                                                </div>
-                                            </div>
-                                        </li>
-            `;
-            }else{
-                text = `
-                <li>
-                                            <div class="conversation-list">
-                                                <div class="ctext-wrap">
-                                                    <div class="conversation-name">${data.user.username}</div>
-                                                    <div class="ctext-wrap-content">
-                                                        <p class="mb-0">
-                                                            ${data.message}
-                                                        </p>
-                                                    </div>
+                axios.get('/looechat/get-messages/' + this.room_id).then(response => {
+                    response.data.forEach(e => {
+                        e = this.getCurrentDate(e);
+                        this.dataMessages.push(e);
+                    });
 
-                                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> ${data.date}</p>
-                                                </div>
-                                            </div>
-                                        </li>
-            `;
-            }
-            messageBlock.innerHTML = messageBlock.innerHTML + text;
+                    //Listen 'message-delivered' event
+                    EventBus.$on('message-delivered', function (data){
+                        console.log('ok')
+                        data.message = this.getCurrentDate(data.message);
+                        this.dataMessages.push(data.message);
+                        //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
+                    }.bind(this));
+                })
+            });
         },
 
         //Sys
