@@ -56613,12 +56613,15 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         this.messages.forEach(function (e) {
             _this.dataMessages.push(e);
         });
+        this.$refs.scroll.$refs.scrollElement.scrollTop = 99999999;
+
         //Listen 'message-delivered' event
         __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
             data.message = this.getCurrentDate(data.message);
             this.dataMessages.push(data.message);
-            $('.simplebar-content').scrollTop = 1500;
-            document.querySelector('.simplebar-content').scrollIntoView({ block: "end" }) + 99999;
+            this.$refs.scroll.$refs.scrollElement.scrollTop = 90000;
+
+            //document.querySelector('.simplebar-content').scrollIntoView({block: "end"}) + 99999;
         }.bind(this));
     },
 
@@ -62691,6 +62694,7 @@ var render = function() {
             _c(
               "simplebar",
               {
+                ref: "scroll",
                 staticStyle: { "max-height": "475px" },
                 attrs: {
                   id: "chat-display",
