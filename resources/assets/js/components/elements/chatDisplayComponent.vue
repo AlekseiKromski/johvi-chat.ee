@@ -20,7 +20,7 @@
         <div class="px-lg-2 custom-chat-box">
             <div class="chat-conversation p-3">
                 <ul class="list-unstyled chat-list" >
-                    <simplebar id="chat-display" style="max-height: 475px;">
+                    <simplebar id="chat-display" style="max-height: 475px;" data-simplebar-auto-hide="false">
                         <li v-bind:class="{'right' : message.user.username === username}" v-for="message in dataMessages">
                             <div class="conversation-list">
                                 <div class="ctext-wrap">
@@ -66,7 +66,7 @@ export default {
     name: "chatDisplayComponent",
     props: ['username', "chatName", "messages", "room_id"],
     components: {
-        simplebar
+        'simplebar' : simplebar
     },
     data: function (){
         return {
@@ -79,12 +79,12 @@ export default {
         this.messages.forEach(e => {
             this.dataMessages.push(e);
         })
-
         //Listen 'message-delivered' event
         EventBus.$on('message-delivered', function (data){
             data.message = this.getCurrentDate(data.message);
             this.dataMessages.push(data.message);
-            //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
+            $('.simplebar-content').scrollTop = 1500;
+            document.querySelector('.simplebar-content').scrollIntoView({block: "end"}) + 99999;
         }.bind(this));
     },
     methods: {

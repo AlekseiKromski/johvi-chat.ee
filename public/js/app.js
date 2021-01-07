@@ -56598,7 +56598,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     name: "chatDisplayComponent",
     props: ['username', "chatName", "messages", "room_id"],
     components: {
-        simplebar: __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
+        'simplebar': __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
     },
     data: function data() {
         return {
@@ -56613,12 +56613,12 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         this.messages.forEach(function (e) {
             _this.dataMessages.push(e);
         });
-
         //Listen 'message-delivered' event
         __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
             data.message = this.getCurrentDate(data.message);
             this.dataMessages.push(data.message);
-            //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
+            $('.simplebar-content').scrollTop = 1500;
+            document.querySelector('.simplebar-content').scrollIntoView({ block: "end" }) + 99999;
         }.bind(this));
     },
 
@@ -62692,7 +62692,10 @@ var render = function() {
               "simplebar",
               {
                 staticStyle: { "max-height": "475px" },
-                attrs: { id: "chat-display" }
+                attrs: {
+                  id: "chat-display",
+                  "data-simplebar-auto-hide": "false"
+                }
               },
               _vm._l(_vm.dataMessages, function(message) {
                 return _c(
