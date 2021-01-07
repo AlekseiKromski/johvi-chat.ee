@@ -66,7 +66,9 @@ export default {
         EventBus.$on('open-chat-display', room_id => {this.openChatDisplay(room_id)});
         let socket = io.connect('http://178.248.138.70:3000', {transports: ['websocket', 'polling', 'flashsocket']});
         socket.on("message-room:App\\Events\\NewMessage", function (data){
-            EventBus.$emit('message-delivered', data);
+            if(this.room_id === Number.parseInt(data.message.chat_room_id)){
+                EventBus.$emit('message-delivered', data);
+            }
         }.bind(this));
     },
     methods: {

@@ -79,8 +79,6 @@ export default {
         this.messages.forEach(e => {
             this.dataMessages.push(e);
         })
-        this.$refs.scroll.$refs.scrollElement.scrollTop = 99999999;
-
         //Listen 'message-delivered' event
         EventBus.$on('message-delivered', function (data){
             data.message = this.getCurrentDate(data.message);
@@ -89,6 +87,9 @@ export default {
 
             //document.querySelector('.simplebar-content').scrollIntoView({block: "end"}) + 99999;
         }.bind(this));
+    },
+    updated() {
+        this.$refs.scroll.$refs.scrollElement.scrollTop = 90000;
     },
     methods: {
         sendMessage: function (){

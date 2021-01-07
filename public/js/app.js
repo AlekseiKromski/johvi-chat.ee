@@ -56391,7 +56391,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         });
         var socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
         socket.on("message-room:App\\Events\\NewMessage", function (data) {
-            __WEBPACK_IMPORTED_MODULE_3__eventBus__["a" /* default */].$emit('message-delivered', data);
+            if (this.room_id === Number.parseInt(data.message.chat_room_id)) {
+                __WEBPACK_IMPORTED_MODULE_3__eventBus__["a" /* default */].$emit('message-delivered', data);
+            }
         }.bind(this));
     },
 
@@ -56613,8 +56615,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         this.messages.forEach(function (e) {
             _this.dataMessages.push(e);
         });
-        this.$refs.scroll.$refs.scrollElement.scrollTop = 99999999;
-
         //Listen 'message-delivered' event
         __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
             data.message = this.getCurrentDate(data.message);
@@ -56623,6 +56623,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
             //document.querySelector('.simplebar-content').scrollIntoView({block: "end"}) + 99999;
         }.bind(this));
+    },
+    updated: function updated() {
+        this.$refs.scroll.$refs.scrollElement.scrollTop = 90000;
     },
 
     methods: {
