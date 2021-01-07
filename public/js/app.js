@@ -56616,7 +56616,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
         //Listen 'message-delivered' event
         __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
-            console.log('ok');
             data.message = this.getCurrentDate(data.message);
             this.dataMessages.push(data.message);
             //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
@@ -62692,37 +62691,40 @@ var render = function() {
             _c(
               "simplebar",
               {
-                ref: "scrollElement",
                 staticStyle: { "max-height": "475px" },
                 attrs: { id: "chat-display" }
               },
               _vm._l(_vm.dataMessages, function(message) {
-                return _c("li", { staticClass: "right" }, [
-                  _c("div", { staticClass: "conversation-list" }, [
-                    _c("div", { staticClass: "ctext-wrap" }, [
-                      _c("div", { staticClass: "conversation-name" }, [
-                        _vm._v(_vm._s(message.user.username))
-                      ]),
-                      _vm._v(" "),
-                      _c("div", { staticClass: "ctext-wrap-content" }, [
-                        _c("p", { staticClass: "mb-0" }, [
-                          _vm._v(
-                            "\n                                        " +
-                              _vm._s(message.message) +
-                              "\n                                    "
-                          )
+                return _c(
+                  "li",
+                  { class: { right: message.user.username === _vm.username } },
+                  [
+                    _c("div", { staticClass: "conversation-list" }, [
+                      _c("div", { staticClass: "ctext-wrap" }, [
+                        _c("div", { staticClass: "conversation-name" }, [
+                          _vm._v(_vm._s(message.user.username))
+                        ]),
+                        _vm._v(" "),
+                        _c("div", { staticClass: "ctext-wrap-content" }, [
+                          _c("p", { staticClass: "mb-0" }, [
+                            _vm._v(
+                              "\n                                        " +
+                                _vm._s(message.message) +
+                                "\n                                    "
+                            )
+                          ])
+                        ]),
+                        _vm._v(" "),
+                        _c("p", { staticClass: "chat-time mb-0" }, [
+                          _c("i", {
+                            staticClass: "bx bx-time-five align-middle mr-1"
+                          }),
+                          _vm._v(" " + _vm._s(message.date))
                         ])
-                      ]),
-                      _vm._v(" "),
-                      _c("p", { staticClass: "chat-time mb-0" }, [
-                        _c("i", {
-                          staticClass: "bx bx-time-five align-middle mr-1"
-                        }),
-                        _vm._v(" 123")
                       ])
                     ])
-                  ])
-                ])
+                  ]
+                )
               }),
               0
             )
