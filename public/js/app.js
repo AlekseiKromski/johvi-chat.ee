@@ -56409,19 +56409,19 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
             if (room_id != this.room_id) {
                 this.room_id = 0;
-            }
-            this.dataMessages = [];
-            axios.get('/looechat/get-chat-info/' + room_id).then(function (response) {
-                _this2.chatName = response.data.name;
+                this.dataMessages = [];
+                axios.get('/looechat/get-chat-info/' + room_id).then(function (response) {
+                    _this2.chatName = response.data.name;
 
-                axios.get('/looechat/get-messages/' + room_id).then(function (response) {
-                    response.data.forEach(function (e) {
-                        e = __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent___default.a.methods.getCurrentDate(e);
-                        _this2.dataMessages.push(e);
+                    axios.get('/looechat/get-messages/' + room_id).then(function (response) {
+                        response.data.forEach(function (e) {
+                            e = __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent___default.a.methods.getCurrentDate(e);
+                            _this2.dataMessages.push(e);
+                        });
+                        _this2.room_id = room_id;
                     });
-                    _this2.room_id = room_id;
                 });
-            });
+            }
         }
     }
 

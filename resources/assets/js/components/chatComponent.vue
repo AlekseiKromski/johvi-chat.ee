@@ -81,19 +81,19 @@ export default {
         openChatDisplay: function (room_id){
             if(room_id != this.room_id){
                 this.room_id = 0;
-            }
-            this.dataMessages = [];
-            axios.get('/looechat/get-chat-info/' + room_id).then(response =>{
-                this.chatName = response.data.name;
+                this.dataMessages = [];
+                axios.get('/looechat/get-chat-info/' + room_id).then(response =>{
+                    this.chatName = response.data.name;
 
-                axios.get('/looechat/get-messages/' + room_id).then(response => {
-                    response.data.forEach(e => {
-                        e = chatDisplayComponent.methods.getCurrentDate(e);
-                        this.dataMessages.push(e);
-                    });
-                    this.room_id = room_id;
-                })
-            });
+                    axios.get('/looechat/get-messages/' + room_id).then(response => {
+                        response.data.forEach(e => {
+                            e = chatDisplayComponent.methods.getCurrentDate(e);
+                            this.dataMessages.push(e);
+                        });
+                        this.room_id = room_id;
+                    })
+                });
+            }
         }
     },
 
