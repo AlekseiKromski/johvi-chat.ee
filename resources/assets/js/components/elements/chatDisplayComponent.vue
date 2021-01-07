@@ -64,7 +64,7 @@ import simplebar from 'simplebar-vue';
 import 'simplebar/dist/simplebar.min.css';
 export default {
     name: "chatDisplayComponent",
-    props: ['username'],
+    props: ['username', "chatName", "messages", "room_id"],
     components: {
         simplebar
     },
@@ -72,26 +72,21 @@ export default {
         return {
             dataMessages: [],
             message: '',
-            chatName: '',
-            room_id: 0
         }
     },
-    created() {
-        /*
-        * By yakari76
-        * ------------ HOW IT WORK (for future reader) --------------
-        *
-        * This code will get info of char room and get all room messages by room id and render messages.
-        * Later code will be connected to the NODE.JS server with SOCKET.IO
-        * When we get new message, code will add message to global array, and render message in display
-        *
-        * For improvement will be added 2 different methods:
-        *   1. getCurrentDate() - will get message object and make perfect date (HOURS:MINUTES)
-        *   2. renderMessages() - will add new element to DOM (THAT BAD IDEA, NEED IMPROVEMENT) and
-        *       scroll your display to end of message box display
-        * */
+    mounted() {
+        this.dataMessages = [];
+        this.messages.forEach(e => {
+            this.dataMessages.push(e);
+        })
 
-        EventBus.$on('open-chat-display', room_id => this.showChatDisplay(room_id));
+        //Listen 'message-delivered' event
+        EventBus.$on('message-delivered', function (data){
+            console.log('ok')
+            data.message = this.getCurrentDate(data.message);
+            this.dataMessages.push(data.message);
+            //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
+        }.bind(this));
     },
     methods: {
         sendMessage: function (){
@@ -105,28 +100,6 @@ export default {
                 })
             }
         },
-        showChatDisplay: function (room_id){
-            this.room_id = room_id;
-            this.dataMessages = [];
-            axios.get('/looechat/get-chat-info/' + this.room_id).then(response =>{
-                this.chatName = response.data.name;
-
-                axios.get('/looechat/get-messages/' + this.room_id).then(response => {
-                    response.data.forEach(e => {
-                        e = this.getCurrentDate(e);
-                        this.dataMessages.push(e);
-                    });
-
-                    //Listen 'message-delivered' event
-                    EventBus.$on('message-delivered', function (data){
-                        console.log('ok')
-                        data.message = this.getCurrentDate(data.message);
-                        this.dataMessages.push(data.message);
-                        //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
-                    }.bind(this));
-                })
-            });
-        },
 
         //Sys
         getCurrentDate: function (message){
@@ -135,6 +108,9 @@ export default {
             message.date = cur_date;
             return message;
         }
+    },
+    destroyed() {
+
     }
 }
 </script>

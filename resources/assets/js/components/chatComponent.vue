@@ -16,9 +16,15 @@
                         <!-- Left side chat component -->
                         <left-side-chat-component v-bind:username="username"></left-side-chat-component>
 
-                        <default-chat-display-component v-show="room_id == 0"></default-chat-display-component>
+                        <default-chat-display-component v-if="room_id == 0"></default-chat-display-component>
                         <!-- Chat component -->
-                        <chat-display-component v-bind:username="username" v-show="room_id != 0"></chat-display-component>
+                        <chat-display-component
+                            v-bind:chatName="chatName"
+                            v-bind:messages="dataMessages"
+                            v-bind:username="username"
+                            v-bind:room_id="room_id"
+                            v-if="room_id != 0"
+                        ></chat-display-component>
                     </div>
                     <!-- end row -->
 
@@ -49,6 +55,10 @@ export default {
             room_id: 0,
             error: false,
             error_message : '',
+
+            chatName: '',
+            dataMessages: []
+
         }
     },
     mounted() {
@@ -69,9 +79,24 @@ export default {
             }.bind(this), 3500)
         },
         openChatDisplay: function (room_id){
-            this.room_id = room_id;
+            if(room_id != this.room_id){
+                this.room_id = 0;
+            }
+            this.dataMessages = [];
+            axios.get('/looechat/get-chat-info/' + room_id).then(response =>{
+                this.chatName = response.data.name;
+
+                axios.get('/looechat/get-messages/' + room_id).then(response => {
+                    response.data.forEach(e => {
+                        e = chatDisplayComponent.methods.getCurrentDate(e);
+                        this.dataMessages.push(e);
+                    });
+                    this.room_id = room_id;
+                })
+            });
         }
-    }
+    },
+
 }
 </script>
 

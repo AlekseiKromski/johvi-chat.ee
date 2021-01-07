@@ -56349,6 +56349,12 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
+//
+//
 
 
 
@@ -56367,7 +56373,11 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         return {
             room_id: 0,
             error: false,
-            error_message: ''
+            error_message: '',
+
+            chatName: '',
+            dataMessages: []
+
         };
     },
     mounted: function mounted() {
@@ -56395,9 +56405,26 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             }.bind(this), 3500);
         },
         openChatDisplay: function openChatDisplay(room_id) {
-            this.room_id = room_id;
+            var _this2 = this;
+
+            if (room_id != this.room_id) {
+                this.room_id = 0;
+            }
+            this.dataMessages = [];
+            axios.get('/looechat/get-chat-info/' + room_id).then(function (response) {
+                _this2.chatName = response.data.name;
+
+                axios.get('/looechat/get-messages/' + room_id).then(function (response) {
+                    response.data.forEach(function (e) {
+                        e = __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent___default.a.methods.getCurrentDate(e);
+                        _this2.dataMessages.push(e);
+                    });
+                    _this2.room_id = room_id;
+                });
+            });
         }
     }
+
 });
 
 /***/ }),
@@ -56567,38 +56594,31 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     name: "chatDisplayComponent",
-    props: ['username'],
+    props: ['username', "chatName", "messages", "room_id"],
     components: {
         simplebar: __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
     },
     data: function data() {
         return {
             dataMessages: [],
-            message: '',
-            chatName: '',
-            room_id: 0
+            message: ''
         };
     },
-    created: function created() {
+    mounted: function mounted() {
         var _this = this;
 
-        /*
-        * By yakari76
-        * ------------ HOW IT WORK (for future reader) --------------
-        *
-        * This code will get info of char room and get all room messages by room id and render messages.
-        * Later code will be connected to the NODE.JS server with SOCKET.IO
-        * When we get new message, code will add message to global array, and render message in display
-        *
-        * For improvement will be added 2 different methods:
-        *   1. getCurrentDate() - will get message object and make perfect date (HOURS:MINUTES)
-        *   2. renderMessages() - will add new element to DOM (THAT BAD IDEA, NEED IMPROVEMENT) and
-        *       scroll your display to end of message box display
-        * */
-
-        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('open-chat-display', function (room_id) {
-            return _this.showChatDisplay(room_id);
+        this.dataMessages = [];
+        this.messages.forEach(function (e) {
+            _this.dataMessages.push(e);
         });
+
+        //Listen 'message-delivered' event
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
+            console.log('ok');
+            data.message = this.getCurrentDate(data.message);
+            this.dataMessages.push(data.message);
+            //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
+        }.bind(this));
     },
 
     methods: {
@@ -56615,30 +56635,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 });
             }
         },
-        showChatDisplay: function showChatDisplay(room_id) {
-            var _this3 = this;
-
-            this.room_id = room_id;
-            this.dataMessages = [];
-            axios.get('/looechat/get-chat-info/' + this.room_id).then(function (response) {
-                _this3.chatName = response.data.name;
-
-                axios.get('/looechat/get-messages/' + _this3.room_id).then(function (response) {
-                    response.data.forEach(function (e) {
-                        e = _this3.getCurrentDate(e);
-                        _this3.dataMessages.push(e);
-                    });
-
-                    //Listen 'message-delivered' event
-                    __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
-                        console.log('ok');
-                        data.message = this.getCurrentDate(data.message);
-                        this.dataMessages.push(data.message);
-                        //document.querySelector('#chat-display').SimpleBar.getScrollElement().scrollTop = $('#chat-display .simplebar-content').height() + 150;
-                    }.bind(_this3));
-                });
-            });
-        },
 
         //Sys
         getCurrentDate: function getCurrentDate(message) {
@@ -56647,7 +56643,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             message.date = cur_date;
             return message;
         }
-    }
+    },
+    destroyed: function destroyed() {}
 });
 
 /***/ }),
@@ -63455,28 +63452,20 @@ var render = function() {
                 attrs: { username: _vm.username }
               }),
               _vm._v(" "),
-              _c("default-chat-display-component", {
-                directives: [
-                  {
-                    name: "show",
-                    rawName: "v-show",
-                    value: _vm.room_id == 0,
-                    expression: "room_id == 0"
-                  }
-                ]
-              }),
+              _vm.room_id == 0
+                ? _c("default-chat-display-component")
+                : _vm._e(),
               _vm._v(" "),
-              _c("chat-display-component", {
-                directives: [
-                  {
-                    name: "show",
-                    rawName: "v-show",
-                    value: _vm.room_id != 0,
-                    expression: "room_id != 0"
-                  }
-                ],
-                attrs: { username: _vm.username }
-              })
+              _vm.room_id != 0
+                ? _c("chat-display-component", {
+                    attrs: {
+                      chatName: _vm.chatName,
+                      messages: _vm.dataMessages,
+                      username: _vm.username,
+                      room_id: _vm.room_id
+                    }
+                  })
+                : _vm._e()
             ],
             1
           )
