@@ -56419,6 +56419,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                             _this2.dataMessages.push(e);
                         });
                         _this2.room_id = room_id;
+
+                        __WEBPACK_IMPORTED_MODULE_3__eventBus__["a" /* default */].$emit('open-chat-display-set-class', _this2.room_id);
                     });
                 });
             }
@@ -62909,7 +62911,7 @@ exports = module.exports = __webpack_require__(22)(false);
 
 
 // module
-exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
+exports.push([module.i, "\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n", ""]);
 
 // exports
 
@@ -63006,8 +63008,19 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     mounted: function mounted() {
         var _this = this;
 
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('open-chat-display-set-class', function (room_id) {
+            this.chats.forEach(function (e) {
+                if (e.statusActive == true) {
+                    e.statusActive = false;
+                }
+                if (e.chat_room_id == room_id) {
+                    e.statusActive = true;
+                }
+            });
+        }.bind(this));
         axios.get('/looechat/get-user-chats').then(function (response) {
             response.data.forEach(function (e) {
+                e.statusActive = false;
                 _this.chats.push(e);
             });
 
@@ -63097,6 +63110,7 @@ var render = function() {
                     return _c(
                       "li",
                       {
+                        class: { active: chat.statusActive },
                         attrs: { id: chat.chatroom.id },
                         on: {
                           click: function($event) {

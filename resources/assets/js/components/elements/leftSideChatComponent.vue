@@ -36,7 +36,7 @@
                     <ul id="chat-list-id" class="list-unstyled chat-list" >
                         <simplebar style="max-height: 475px;">
                             <!--class="active"-->
-                            <li  v-for="chat in chats" v-bind:id="chat.chatroom.id" v-on:click.prevent="openChatDisplay($event)">
+                            <li v-bind:class="{'active' : chat.statusActive}" v-for="chat in chats" v-bind:id="chat.chatroom.id" v-on:click.prevent="openChatDisplay($event)">
                                 <a href="">
                                     <div class="media">
 
@@ -78,8 +78,19 @@ export default {
         }
     },
     mounted(){
+        EventBus.$on('open-chat-display-set-class', function (room_id){
+            this.chats.forEach(e => {
+                if(e.statusActive == true){
+                    e.statusActive = false;
+                }
+                if(e.chat_room_id == room_id){
+                    e.statusActive = true;
+                }
+            })
+        }.bind(this));
         axios.get('/looechat/get-user-chats').then(response => {
             response.data.forEach(e => {
+                e.statusActive = false;
                 this.chats.push(e);
             })
 

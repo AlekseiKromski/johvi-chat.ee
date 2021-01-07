@@ -91,6 +91,8 @@ export default {
                             this.dataMessages.push(e);
                         });
                         this.room_id = room_id;
+
+                        EventBus.$emit('open-chat-display-set-class', this.room_id);
                     })
                 });
             }
