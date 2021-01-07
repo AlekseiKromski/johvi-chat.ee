@@ -76,7 +76,7 @@ export default {
             room_id: 0
         }
     },
-    mounted() {
+    created() {
         /*
         * By yakari76
         * ------------ HOW IT WORK (for future reader) --------------

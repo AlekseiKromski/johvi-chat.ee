@@ -234,7 +234,7 @@ iframe {
 /*==================================================================
 [ login more ]*/
 .login100-more {
-  width: calc(100% - 560px);
+  width: calc(100% - 30%);
   background-repeat: no-repeat;
   background-size: cover;
   background-position: center;
@@ -260,7 +260,8 @@ iframe {
 [ Form ]*/
 
 .login100-form {
-  width: 560px;
+  /*width: 560px;*/
+  width: 30%;
   min-height: 100vh;
   display: block;
   background-color: #f7f7f7;
