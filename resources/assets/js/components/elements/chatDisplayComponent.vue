@@ -19,24 +19,22 @@
 
         <div class="px-lg-2 custom-chat-box">
             <div class="chat-conversation p-3">
-                <ul class="list-unstyled chat-list" >
-                    <simplebar ref="simplebar" style="max-height: 475px;" data-simplebar-auto-hide="false">
-                        <li v-bind:class="{'right' : message.user.username === username}" v-for="message in dataMessages">
-                            <div class="conversation-list">
-                                <div class="ctext-wrap">
-                                    <div class="conversation-name">{{message.user.username}}</div>
-                                    <div class="ctext-wrap-content">
-                                        <p class="mb-0">
-                                            {{ message.message}}
-                                        </p>
-                                    </div>
-
-                                    <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> {{message.date}}</p>
+                <simplebar class="list-unstyled mb-0 pr-3" ref="simplebar" style="max-height: 475px;" data-simplebar-auto-hide="false">
+                    <li v-bind:class="{'right' : message.user.username === username}" v-for="message in dataMessages">
+                        <div class="conversation-list">
+                            <div class="ctext-wrap">
+                                <div class="conversation-name">{{message.user.username}}</div>
+                                <div class="ctext-wrap-content">
+                                    <p class="mb-0">
+                                        {{ message.message}}
+                                    </p>
                                 </div>
+
+                                <p class="chat-time mb-0"><i class="bx bx-time-five align-middle mr-1"></i> {{message.date}}</p>
                             </div>
-                        </li>
-                    </simplebar>
-                </ul>
+                        </div>
+                    </li>
+                </simplebar>
             </div>
 
         </div>
@@ -58,6 +56,7 @@
 </template>
 
 <script>
+
 import EventBus from "../../eventBus";
 
 import simplebar from 'simplebar-vue';
@@ -65,7 +64,7 @@ export default {
     name: "chatDisplayComponent",
     props: ['username', "chatName", "messages", "room_id"],
     components: {
-        'simplebar' : simplebar
+        'simplebar' : simplebar,
     },
     data: function (){
         return {
@@ -73,7 +72,7 @@ export default {
             message: '',
         }
     },
-    mounted() {
+    created() {
         this.dataMessages = [];
         this.messages.forEach(e => {
             this.dataMessages.push(e);
@@ -83,6 +82,9 @@ export default {
             data.message = this.getCurrentDate(data.message);
             this.dataMessages.push(data.message);
         }.bind(this));
+    },
+    mounted() {
+        EventBus.$emit('show-mounted-chat-display', this)
     },
     updated() {
         this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
@@ -106,6 +108,9 @@ export default {
             let cur_date = date.getHours() + ':' + date.getMinutes()
             message.date = cur_date;
             return message;
+        },
+        scrollBottom: function (){
+            this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
         }
     },
     destroyed() {

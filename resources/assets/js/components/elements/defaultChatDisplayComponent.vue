@@ -31,7 +31,7 @@ export default {
 
 <style scoped>
     .default-display{
-        min-height: 630px;
+        min-height: 655px;
         background-color: #fbfbfb;
     }
 

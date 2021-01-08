@@ -33,28 +33,26 @@
                         You dont have chats 😔
                     </p>
 
-                    <ul id="chat-list-id" class="list-unstyled chat-list" >
-                        <simplebar style="max-height: 475px;">
-                            <!--class="active"-->
-                            <li v-bind:class="{'active' : chat.statusActive}" v-for="chat in chats" v-bind:id="chat.chatroom.id" v-on:click.prevent="openChatDisplay($event)">
-                                <a href="">
-                                    <div class="media">
+                    <simplebar style="max-height: 475px;" class="list-unstyled chat-list">
+                        <!--class="active"-->
+                        <li v-bind:class="{'active' : chat.statusActive}" v-for="chat in chats" v-bind:id="chat.chatroom.id" v-on:click.prevent="openChatDisplay($event)">
+                            <a href="">
+                                <div class="media">
 
-                                        <div class="user-img online align-self-center mr-3">
-                                            <img src="chat/images/users/avatar-2.jpg" class="rounded-circle avatar-xs" alt="">
-                                            <span class="user-status"></span>
-                                        </div>
-
-                                        <div class="media-body overflow-hidden">
-                                            <h5 class="text-truncate font-size-14 mb-1">{{ chat.chatroom.name }}</h5>
-                                            <p class="text-truncate mb-0">Hey! there I'm available</p>
-                                        </div>
-                                        <div class="font-size-11">xx min</div>
+                                    <div class="user-img online align-self-center mr-3">
+                                        <img src="chat/images/users/avatar-2.jpg" class="rounded-circle avatar-xs" alt="">
+                                        <span class="user-status"></span>
                                     </div>
-                                </a>
-                            </li>
-                        </simplebar>
-                    </ul>
+
+                                    <div class="media-body overflow-hidden">
+                                        <h5 class="text-truncate font-size-14 mb-1">{{ chat.chatroom.name }}</h5>
+                                        <p class="text-truncate mb-0">Hey! there I'm available</p>
+                                    </div>
+                                    <div class="font-size-11">xx min</div>
+                                </div>
+                            </a>
+                        </li>
+                    </simplebar>
                 </div>
             </div>
         </div>
@@ -117,5 +115,7 @@ export default {
 </script>
 
 <style scoped>
-
+    .chat-leftsidebar{
+        min-height: 655px;
+    }
 </style>
