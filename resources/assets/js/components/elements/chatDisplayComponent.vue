@@ -20,7 +20,7 @@
         <div class="px-lg-2 custom-chat-box">
             <div class="chat-conversation p-3">
                 <ul class="list-unstyled chat-list" >
-                    <simplebar ref="simplebar" style="max-height: 475px;" data-simplebar-auto-hide="false">
+                    <simplebar ref="simplebar" class="simplebar" style="max-height: 475px;" data-simplebar-auto-hide="false">
                         <li v-bind:class="{'right' : message.user.username === username}" v-for="message in dataMessages">
                             <div class="conversation-list">
                                 <div class="ctext-wrap">
@@ -61,7 +61,6 @@
 import EventBus from "../../eventBus";
 
 import simplebar from 'simplebar-vue';
-//import 'simplebar/dist/simplebar.min.css';
 export default {
     name: "chatDisplayComponent",
     props: ['username', "chatName", "messages", "room_id"],
@@ -130,4 +129,6 @@ export default {
     .btn-custom-primary:focus{
         box-shadow: 0 0 0 3px rgba(223,113,102,.5);
     }
+
+
 </style>
