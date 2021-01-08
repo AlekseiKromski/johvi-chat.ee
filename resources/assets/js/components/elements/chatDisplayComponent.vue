@@ -3,13 +3,13 @@
         <div class="p-3 px-lg-4 user-chat-border">
             <div class="row">
                 <div class="col-md-4 col-6">
-                    <h5 class="font-size-15 mb-1 text-truncate">{{chatName}}</h5>
-                    <p class="text-muted text-truncate mb-0"><i class="mdi mdi-circle text-success align-middle mr-1"></i> В сети</p>
+                    <h5 class="font-size-15 mb-1 mt-1 text-truncate">{{chatName}}</h5>
+                    <!--<p class="text-muted text-truncate mb-0"><i class="mdi mdi-circle text-success align-middle mr-1"></i> В сети</p>-->
                 </div>
                 <div class="col-md-8 col-6">
                     <ul class="list-inline user-chat-nav text-right mb-0">
                         <li class="list-inline-item">
-                            {{online_users}} / {{ count_users }} users
+                            Количество людей в чате: {{ count_users }}
                         </li>
 
                     </ul>
@@ -114,7 +114,7 @@ export default {
         }
     },
     destroyed() {
-        axios.get('looechat/disconnect-user-into-channel/' + this.room_id);
+
     }
 }
 </script>

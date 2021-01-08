@@ -30,7 +30,5 @@ Route::group(['middleware' => 'auth', 'prefix' => 'looechat'], function (){
     Route::get('/get-chat-info/{id}', "UserController@getChatInfo");
     Route::get('/get-user-chats', "UserController@getUserChats");
     Route::get('/join/{id}', "UserController@joinUserIntoChat");
-    Route::get('/joined-to-channel/{id}', "UserController@joinedToChannel");
-    Route::get('/disconnect-user-into-channel/{id}', "UserController@disconnectUserChannel");
     Route::get("/logout", "Auth\LoginController@logout")->name('logout');
 });

@@ -56418,7 +56418,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                         }.bind(_this2));
                     });
                 });
-                axios.get('looechat/joined-to-channel/' + room_id);
             }
         }
 
@@ -56645,9 +56644,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
         }
     },
-    destroyed: function destroyed() {
-        axios.get('looechat/disconnect-user-into-channel/' + this.room_id);
-    }
+    destroyed: function destroyed() {}
 });
 
 /***/ }),
@@ -62205,11 +62202,9 @@ var render = function() {
     _c("div", { staticClass: "p-3 px-lg-4 user-chat-border" }, [
       _c("div", { staticClass: "row" }, [
         _c("div", { staticClass: "col-md-4 col-6" }, [
-          _c("h5", { staticClass: "font-size-15 mb-1 text-truncate" }, [
+          _c("h5", { staticClass: "font-size-15 mb-1 mt-1 text-truncate" }, [
             _vm._v(_vm._s(_vm.chatName))
-          ]),
-          _vm._v(" "),
-          _vm._m(0)
+          ])
         ]),
         _vm._v(" "),
         _c("div", { staticClass: "col-md-8 col-6" }, [
@@ -62219,11 +62214,9 @@ var render = function() {
             [
               _c("li", { staticClass: "list-inline-item" }, [
                 _vm._v(
-                  "\n                        " +
-                    _vm._s(_vm.online_users) +
-                    " / " +
+                  "\n                        Количество людей в чате: " +
                     _vm._s(_vm.count_users) +
-                    " users\n                    "
+                    "\n                    "
                 )
               ])
             ]
@@ -62345,17 +62338,7 @@ var render = function() {
     ])
   ])
 }
-var staticRenderFns = [
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("p", { staticClass: "text-muted text-truncate mb-0" }, [
-      _c("i", { staticClass: "mdi mdi-circle text-success align-middle mr-1" }),
-      _vm._v(" В сети")
-    ])
-  }
-]
+var staticRenderFns = []
 render._withStripped = true
 module.exports = { render: render, staticRenderFns: staticRenderFns }
 if (false) {

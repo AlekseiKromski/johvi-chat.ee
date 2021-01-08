@@ -121,7 +121,6 @@ export default {
                         }.bind(this));
                     });
                 });
-                axios.get('looechat/joined-to-channel/' + room_id);
             }
         }
 
