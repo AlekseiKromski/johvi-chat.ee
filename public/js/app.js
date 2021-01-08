@@ -62193,7 +62193,6 @@ var render = function() {
               "simplebar",
               {
                 ref: "simplebar",
-                staticClass: "simplebar",
                 staticStyle: { "max-height": "475px" },
                 attrs: { "data-simplebar-auto-hide": "false" }
               },
