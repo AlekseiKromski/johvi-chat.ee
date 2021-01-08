@@ -20,7 +20,7 @@
         <div class="px-lg-2 custom-chat-box">
             <div class="chat-conversation p-3">
                 <ul class="list-unstyled chat-list" >
-                    <simplebar ref="scroll" id="chat-display" style="max-height: 475px;" data-simplebar-auto-hide="false">
+                    <simplebar ref="simplebar" style="max-height: 475px;" data-simplebar-auto-hide="false">
                         <li v-bind:class="{'right' : message.user.username === username}" v-for="message in dataMessages">
                             <div class="conversation-list">
                                 <div class="ctext-wrap">
@@ -61,7 +61,7 @@
 import EventBus from "../../eventBus";
 
 import simplebar from 'simplebar-vue';
-import 'simplebar/dist/simplebar.min.css';
+//import 'simplebar/dist/simplebar.min.css';
 export default {
     name: "chatDisplayComponent",
     props: ['username', "chatName", "messages", "room_id"],
@@ -83,13 +83,10 @@ export default {
         EventBus.$on('message-delivered', function (data){
             data.message = this.getCurrentDate(data.message);
             this.dataMessages.push(data.message);
-            this.$refs.scroll.$refs.scrollElement.scrollTop = 90000;
-
-            //document.querySelector('.simplebar-content').scrollIntoView({block: "end"}) + 99999;
         }.bind(this));
     },
     updated() {
-        this.$refs.scroll.$refs.scrollElement.scrollTop = 90000;
+        this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
     },
     methods: {
         sendMessage: function (){

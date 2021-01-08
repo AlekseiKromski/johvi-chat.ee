@@ -56391,7 +56391,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         });
         var socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
         socket.on("message-room:App\\Events\\NewMessage", function (data) {
-            if (this.room_id === Number.parseInt(data.message.chat_room_id)) {
+            if (this.room_id == Number.parseInt(data.message.chat_room_id)) {
                 __WEBPACK_IMPORTED_MODULE_3__eventBus__["a" /* default */].$emit('message-delivered', data);
             }
         }.bind(this));
@@ -56530,8 +56530,6 @@ exports.push([module.i, "\n.custom-chat-box[data-v-54f2e038]{\n    min-height: 4
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__eventBus__ = __webpack_require__(32);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__ = __webpack_require__(82);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_simplebar_dist_simplebar_min_css__ = __webpack_require__(133);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2_simplebar_dist_simplebar_min_css___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2_simplebar_dist_simplebar_min_css__);
 //
 //
 //
@@ -56595,7 +56593,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 
 
-
+//import 'simplebar/dist/simplebar.min.css';
 /* harmony default export */ __webpack_exports__["default"] = ({
     name: "chatDisplayComponent",
     props: ['username', "chatName", "messages", "room_id"],
@@ -56619,13 +56617,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
             data.message = this.getCurrentDate(data.message);
             this.dataMessages.push(data.message);
-            this.$refs.scroll.$refs.scrollElement.scrollTop = 90000;
-
-            //document.querySelector('.simplebar-content').scrollIntoView({block: "end"}) + 99999;
         }.bind(this));
     },
     updated: function updated() {
-        this.$refs.scroll.$refs.scrollElement.scrollTop = 90000;
+        this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
     },
 
     methods: {
@@ -62697,12 +62692,9 @@ var render = function() {
             _c(
               "simplebar",
               {
-                ref: "scroll",
+                ref: "simplebar",
                 staticStyle: { "max-height": "475px" },
-                attrs: {
-                  id: "chat-display",
-                  "data-simplebar-auto-hide": "false"
-                }
+                attrs: { "data-simplebar-auto-hide": "false" }
               },
               _vm._l(_vm.dataMessages, function(message) {
                 return _c(
