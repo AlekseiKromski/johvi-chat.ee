@@ -56329,6 +56329,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
 
 
 
@@ -56350,9 +56352,11 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             error: false,
             error_message: '',
             chatName: '',
+            count_users: '',
             dataMessages: [],
             preLoader: false,
-            openMountedChat: false
+            openMountedChat: false,
+            online_users: null
 
         };
     },
@@ -56371,6 +56375,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 __WEBPACK_IMPORTED_MODULE_4__eventBus__["a" /* default */].$emit('message-delivered', data);
             }
         }.bind(this));
+        socket.on("join-user:App\\Events\\JoinUser", function (data) {}.bind(this));
     },
 
     methods: {
@@ -56392,14 +56397,14 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 this.dataMessages = [];
                 axios.get('/looechat/get-chat-info/' + room_id).then(function (response) {
                     _this2.chatName = response.data.name;
-
+                    _this2.count_users = response.data.users_count;
+                    _this2.online_users = response.data.online_users;
                     axios.get('/looechat/get-messages/' + room_id).then(function (response) {
                         response.data.forEach(function (e) {
                             e = __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent___default.a.methods.getCurrentDate(e);
                             _this2.dataMessages.push(e);
                         });
                         _this2.room_id = room_id;
-
                         __WEBPACK_IMPORTED_MODULE_4__eventBus__["a" /* default */].$on('show-mounted-chat-display', function (this_) {
                             setTimeout(function () {
                                 this.preLoader = false;
@@ -56408,12 +56413,15 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                                 }, 0);
                                 this.openMountedChat = true;
                             }.bind(this), 1000);
+
                             __WEBPACK_IMPORTED_MODULE_4__eventBus__["a" /* default */].$emit('open-chat-display-set-class', this.room_id);
                         }.bind(_this2));
                     });
                 });
+                axios.get('looechat/joined-to-channel/' + room_id);
             }
         }
+
     }
 
 });
@@ -56581,7 +56589,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     name: "chatDisplayComponent",
-    props: ['username', "chatName", "messages", "room_id"],
+    props: ['username', "chatName", "messages", "room_id", "count_users", "online_users"],
     components: {
         'simplebar': __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
     },
@@ -56637,7 +56645,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
         }
     },
-    destroyed: function destroyed() {}
+    destroyed: function destroyed() {
+        axios.get('looechat/disconnect-user-into-channel/' + this.room_id);
+    }
 });
 
 /***/ }),
@@ -62202,7 +62212,23 @@ var render = function() {
           _vm._m(0)
         ]),
         _vm._v(" "),
-        _vm._m(1)
+        _c("div", { staticClass: "col-md-8 col-6" }, [
+          _c(
+            "ul",
+            { staticClass: "list-inline user-chat-nav text-right mb-0" },
+            [
+              _c("li", { staticClass: "list-inline-item" }, [
+                _vm._v(
+                  "\n                        " +
+                    _vm._s(_vm.online_users) +
+                    " / " +
+                    _vm._s(_vm.count_users) +
+                    " users\n                    "
+                )
+              ])
+            ]
+          )
+        ])
       ])
     ]),
     _vm._v(" "),
@@ -62327,18 +62353,6 @@ var staticRenderFns = [
     return _c("p", { staticClass: "text-muted text-truncate mb-0" }, [
       _c("i", { staticClass: "mdi mdi-circle text-success align-middle mr-1" }),
       _vm._v(" В сети")
-    ])
-  },
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "col-md-8 col-6" }, [
-      _c("ul", { staticClass: "list-inline user-chat-nav text-right mb-0" }, [
-        _c("li", { staticClass: "list-inline-item" }, [
-          _vm._v("\n                        x / x users\n                    ")
-        ])
-      ])
     ])
   }
 ]
@@ -63005,7 +63019,9 @@ var render = function() {
                       chatName: _vm.chatName,
                       messages: _vm.dataMessages,
                       username: _vm.username,
-                      room_id: _vm.room_id
+                      room_id: _vm.room_id,
+                      count_users: _vm.count_users,
+                      online_users: _vm.online_users
                     }
                   })
                 : _vm._e(),

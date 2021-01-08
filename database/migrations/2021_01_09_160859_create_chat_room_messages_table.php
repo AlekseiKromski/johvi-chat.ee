@@ -19,7 +19,7 @@ class CreateChatRoomMessagesTable extends Migration
             $table->unsignedInteger('user_id');
             $table->longText('message');
             $table->timestamps();
-
+            $table->softDeletes();
             $table->foreign('chat_room_id')->references('id')->on('chat_rooms');
             $table->foreign('user_id')->references('id')->on('users');
         });

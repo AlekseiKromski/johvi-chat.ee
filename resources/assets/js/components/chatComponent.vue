@@ -22,6 +22,8 @@
                             v-bind:messages="dataMessages"
                             v-bind:username="username"
                             v-bind:room_id="room_id"
+                            v-bind:count_users="count_users"
+                            v-bind:online_users="online_users"
                             v-if="room_id != -1 && room_id != 0"
                             v-show="openMountedChat"
                         ></chat-display-component>
@@ -60,9 +62,11 @@ export default {
             error: false,
             error_message : '',
             chatName: '',
+            count_users: '',
             dataMessages: [],
             preLoader: false,
-            openMountedChat: false
+            openMountedChat: false,
+            online_users: null,
 
         }
     },
@@ -75,7 +79,9 @@ export default {
                 EventBus.$emit('message-delivered', data);
             }
         }.bind(this));
+        socket.on("join-user:App\\Events\\JoinUser", function (data){
 
+        }.bind(this));
     },
     methods: {
         showError: function (message){
@@ -94,29 +100,32 @@ export default {
                 this.dataMessages = [];
                 axios.get('/looechat/get-chat-info/' + room_id).then(response =>{
                     this.chatName = response.data.name;
-
+                    this.count_users = response.data.users_count;
+                    this.online_users = response.data.online_users;
                     axios.get('/looechat/get-messages/' + room_id).then(response => {
                         response.data.forEach(e => {
                             e = chatDisplayComponent.methods.getCurrentDate(e);
                             this.dataMessages.push(e);
                         });
                         this.room_id = room_id;
-
                         EventBus.$on('show-mounted-chat-display', function (this_) {
                             setTimeout(function (){
                                 this.preLoader = false;
                                 setTimeout(function (){
                                     this_.scrollBottom();
-                                }, 0)
+                                }, 0);
                                 this.openMountedChat = true;
                             }.bind(this), 1000)
+
                             EventBus.$emit('open-chat-display-set-class', this.room_id);
                         }.bind(this));
                     });
                 });
+                axios.get('looechat/joined-to-channel/' + room_id);
             }
         }
-    },
+
+    }
 
 }
 </script>

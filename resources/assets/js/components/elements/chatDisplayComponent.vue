@@ -9,7 +9,7 @@
                 <div class="col-md-8 col-6">
                     <ul class="list-inline user-chat-nav text-right mb-0">
                         <li class="list-inline-item">
-                            x / x users
+                            {{online_users}} / {{ count_users }} users
                         </li>
 
                     </ul>
@@ -62,7 +62,7 @@ import EventBus from "../../eventBus";
 import simplebar from 'simplebar-vue';
 export default {
     name: "chatDisplayComponent",
-    props: ['username', "chatName", "messages", "room_id"],
+    props: ['username', "chatName", "messages", "room_id", "count_users", "online_users"],
     components: {
         'simplebar' : simplebar,
     },
@@ -114,7 +114,7 @@ export default {
         }
     },
     destroyed() {
-
+        axios.get('looechat/disconnect-user-into-channel/' + this.room_id);
     }
 }
 </script>
