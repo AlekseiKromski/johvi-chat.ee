@@ -7,6 +7,5 @@
  - Неограниченное количество чатов
  - Высокая скорость работы
  - Возможность предлагать свои идеи авторам приложения
-
-![N|Solid](/AlekseiKromski/looe-chat/blob/master/public/images/rdm.png?raw=true)
+ <img src="https://github.com/AlekseiKromski/looe-chat/blob/master/public/images/rdm.png?raw=true"/> 
 
