@@ -13,7 +13,7 @@
                 <div class="container-fluid">
                     <div class="d-lg-flex mb-4">
                         <!-- Left side chat component -->
-                        <left-side-chat-component v-bind:username="username"></left-side-chat-component>
+                        <left-side-chat-component v-bind:socket="socket" v-bind:username="username"></left-side-chat-component>
 
                         <default-chat-display-component v-if="room_id == 0 && room_id != -1 && private_id == 0 && private_id != -1"></default-chat-display-component>
                         <!-- Chat component -->
@@ -33,6 +33,7 @@
                             v-bind:messages="dataMessages"
                             v-bind:username="username"
                             v-bind:private_id="private_id"
+                            v-bind:user_id="userid"
 
                             v-if="display_type == 'private' && private_id != -1 && private_id != 0"
                             v-show="openMountedChat"
@@ -60,7 +61,7 @@ import chatPrivateDisplayComponent from "./elements/chatPrivateDisplayComponent"
 import EventBus from "../eventBus";
 export default {
     name: "chatComponent",
-    props: ['username'],
+    props: ['username', 'userid'],
     components: {
         'chat-room-display-component': chatRoomDisplayComponent,
         'left-side-chat-component': leftSideChatComponent,
@@ -71,9 +72,11 @@ export default {
     },
     data: function (){
         return {
+            //Sys
             error: false,
             error_message : '',
             display_type: null,
+            socket:null,
 
             //Rooms
             room_id: 0,
@@ -92,13 +95,13 @@ export default {
         EventBus.$on('error', message => {this.showError(message)});
         EventBus.$on('open-chat-room-display', room_id => {this.openChatRoomDisplay(room_id)});
         EventBus.$on('open-chat-private-display', private_id => {this.openChatPrivateDisplay(private_id)});
-        let socket = io.connect('http://178.248.138.70:3000', {transports: ['websocket', 'polling', 'flashsocket']});
-        socket.on("message-room:App\\Events\\NewMessage", function (data){
+        this.socket = io.connect('http://178.248.138.70:3000', {transports: ['websocket', 'polling', 'flashsocket']});
+        this.socket.on("message-room:App\\Events\\NewMessage", function (data){
             if(this.room_id == Number.parseInt(data.message.chat_room_id)){
                 EventBus.$emit('message-delivered', data);
             }
         }.bind(this));
-        socket.on("join-user:App\\Events\\JoinUser", function (data){
+        this.socket.on("join-user:App\\Events\\JoinUser", function (data){
 
         }.bind(this));
     },

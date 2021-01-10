@@ -54,7 +54,7 @@
                             </a>
                         </li>
 
-                        <li v-for="chat in chats_privates" v-bind:id="chat.id" v-on:click.prevent="openChatPrivateDisplay($event)">
+                        <li v-for="chat in chats_privates" v-bind:id="chat.chat_id" v-on:click.prevent="openChatPrivateDisplay($event)">
                             <a href="">
                                 <div class="media">
 
@@ -84,7 +84,7 @@ import EventBus from "../../eventBus";
 import simplebar from 'simplebar-vue';
 export default {
     name: "leftSideChatComponent",
-    props: ['username'],
+    props: ['username', 'socket'],
     components: {
         simplebar
     },
@@ -117,7 +117,10 @@ export default {
             response.data.forEach(e => {
                 e.statusActive = false;
                 this.chats_privates.push(e);
-            })
+                this.socket.on("private-message."+ e.chat_id +":App\\Events\\PrivateNewMessage", function (data){
+                    EventBus.$emit('message-private-delivered', data);
+                }.bind(this));
+            });
         });
         EventBus.$on('join-chat-action', function (id){
             axios.get('/looechat/join/' + id).then(response => {

@@ -54,7 +54,7 @@ import EventBus from "../../eventBus";
 import simplebar from 'simplebar-vue';
 export default {
     name: "chatPrivateDisplayComponent",
-    props: ['username', "chatName", "messages", "recipient_id"],
+    props: ['username', "chatName", "messages", "user_id", "private_id"],
     components: {
         'simplebar' : simplebar,
     },
@@ -70,7 +70,7 @@ export default {
             this.dataMessages.push(e);
         })
         //Listen 'message-delivered' event
-        EventBus.$on('message-delivered', function (data){
+        EventBus.$on('message-private-delivered', function (data){
             data.message = this.getCurrentDate(data.message);
             this.dataMessages.push(data.message);
         }.bind(this));
@@ -86,8 +86,8 @@ export default {
             if(this.message != ''){
                 axios({
                     method: 'get',
-                    url: '/looechat/send-message',
-                    params: {message: this.message, room_id: this.room_id}
+                    url: '/looechat/send-private-message',
+                    params: {message: this.message, user_id: this.user_id, private_id: this.private_id}
                 }).then((response) => {
                     this.message = '';
                 })

@@ -56343,6 +56343,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
 
 
 
@@ -56352,7 +56353,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     name: "chatComponent",
-    props: ['username'],
+    props: ['username', 'userid'],
     components: {
         'chat-room-display-component': __WEBPACK_IMPORTED_MODULE_0__elements_chatRoomDisplayComponent___default.a,
         'left-side-chat-component': __WEBPACK_IMPORTED_MODULE_1__elements_leftSideChatComponent___default.a,
@@ -56363,9 +56364,11 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     },
     data: function data() {
         return {
+            //Sys
             error: false,
             error_message: '',
             display_type: null,
+            socket: null,
 
             //Rooms
             room_id: 0,
@@ -56392,13 +56395,13 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('open-chat-private-display', function (private_id) {
             _this.openChatPrivateDisplay(private_id);
         });
-        var socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
-        socket.on("message-room:App\\Events\\NewMessage", function (data) {
+        this.socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
+        this.socket.on("message-room:App\\Events\\NewMessage", function (data) {
             if (this.room_id == Number.parseInt(data.message.chat_room_id)) {
                 __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('message-delivered', data);
             }
         }.bind(this));
-        socket.on("join-user:App\\Events\\JoinUser", function (data) {}.bind(this));
+        this.socket.on("join-user:App\\Events\\JoinUser", function (data) {}.bind(this));
     },
 
     methods: {
@@ -62219,7 +62222,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     name: "leftSideChatComponent",
-    props: ['username'],
+    props: ['username', 'socket'],
     components: {
         simplebar: __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
     },
@@ -62254,6 +62257,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             response.data.forEach(function (e) {
                 e.statusActive = false;
                 _this.chats_privates.push(e);
+                _this.socket.on("private-message." + e.chat_id + ":App\\Events\\PrivateNewMessage", function (data) {
+                    __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('message-private-delivered', data);
+                }.bind(_this));
             });
         });
         __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('join-chat-action', function (id) {
@@ -62405,7 +62411,7 @@ var render = function() {
                     return _c(
                       "li",
                       {
-                        attrs: { id: chat.id },
+                        attrs: { id: chat.chat_id },
                         on: {
                           click: function($event) {
                             $event.preventDefault()
@@ -62922,7 +62928,7 @@ var render = function() {
             { staticClass: "d-lg-flex mb-4" },
             [
               _c("left-side-chat-component", {
-                attrs: { username: _vm.username }
+                attrs: { socket: _vm.socket, username: _vm.username }
               }),
               _vm._v(" "),
               _vm.room_id == 0 &&
@@ -62970,7 +62976,8 @@ var render = function() {
                       chatName: _vm.chatName,
                       messages: _vm.dataMessages,
                       username: _vm.username,
-                      private_id: _vm.private_id
+                      private_id: _vm.private_id,
+                      user_id: _vm.userid
                     }
                   })
                 : _vm._e(),
@@ -63547,7 +63554,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     name: "chatPrivateDisplayComponent",
-    props: ['username', "chatName", "messages", "recipient_id"],
+    props: ['username', "chatName", "messages", "user_id", "private_id"],
     components: {
         'simplebar': __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
     },
@@ -63565,7 +63572,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             _this.dataMessages.push(e);
         });
         //Listen 'message-delivered' event
-        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-private-delivered', function (data) {
             data.message = this.getCurrentDate(data.message);
             this.dataMessages.push(data.message);
         }.bind(this));
@@ -63584,8 +63591,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             if (this.message != '') {
                 axios({
                     method: 'get',
-                    url: '/looechat/send-message',
-                    params: { message: this.message, room_id: this.room_id }
+                    url: '/looechat/send-private-message',
+                    params: { message: this.message, user_id: this.user_id, private_id: this.private_id }
                 }).then(function (response) {
                     _this2.message = '';
                 });
