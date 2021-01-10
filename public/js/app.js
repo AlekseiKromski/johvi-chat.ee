@@ -858,7 +858,7 @@ var createNonEnumerableProperty = __webpack_require__(9);
 var has = __webpack_require__(5);
 var setGlobal = __webpack_require__(51);
 var inspectSource = __webpack_require__(103);
-var InternalStateModule = __webpack_require__(24);
+var InternalStateModule = __webpack_require__(26);
 
 var getInternalState = InternalStateModule.get;
 var enforceInternalState = InternalStateModule.enforce;
@@ -1232,6 +1232,343 @@ function toComment(sourceMap) {
 
 /***/ }),
 /* 23 */
+/***/ (function(module, exports, __webpack_require__) {
+
+/*
+  MIT License http://www.opensource.org/licenses/mit-license.php
+  Author Tobias Koppers @sokra
+  Modified by Evan You @yyx990803
+*/
+
+var hasDocument = typeof document !== 'undefined'
+
+if (typeof DEBUG !== 'undefined' && DEBUG) {
+  if (!hasDocument) {
+    throw new Error(
+    'vue-style-loader cannot be used in a non-browser environment. ' +
+    "Use { target: 'node' } in your Webpack config to indicate a server-rendering environment."
+  ) }
+}
+
+var listToStyles = __webpack_require__(189)
+
+/*
+type StyleObject = {
+  id: number;
+  parts: Array<StyleObjectPart>
+}
+
+type StyleObjectPart = {
+  css: string;
+  media: string;
+  sourceMap: ?string
+}
+*/
+
+var stylesInDom = {/*
+  [id: number]: {
+    id: number,
+    refs: number,
+    parts: Array<(obj?: StyleObjectPart) => void>
+  }
+*/}
+
+var head = hasDocument && (document.head || document.getElementsByTagName('head')[0])
+var singletonElement = null
+var singletonCounter = 0
+var isProduction = false
+var noop = function () {}
+var options = null
+var ssrIdKey = 'data-vue-ssr-id'
+
+// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
+// tags it will allow on a page
+var isOldIE = typeof navigator !== 'undefined' && /msie [6-9]\b/.test(navigator.userAgent.toLowerCase())
+
+module.exports = function (parentId, list, _isProduction, _options) {
+  isProduction = _isProduction
+
+  options = _options || {}
+
+  var styles = listToStyles(parentId, list)
+  addStylesToDom(styles)
+
+  return function update (newList) {
+    var mayRemove = []
+    for (var i = 0; i < styles.length; i++) {
+      var item = styles[i]
+      var domStyle = stylesInDom[item.id]
+      domStyle.refs--
+      mayRemove.push(domStyle)
+    }
+    if (newList) {
+      styles = listToStyles(parentId, newList)
+      addStylesToDom(styles)
+    } else {
+      styles = []
+    }
+    for (var i = 0; i < mayRemove.length; i++) {
+      var domStyle = mayRemove[i]
+      if (domStyle.refs === 0) {
+        for (var j = 0; j < domStyle.parts.length; j++) {
+          domStyle.parts[j]()
+        }
+        delete stylesInDom[domStyle.id]
+      }
+    }
+  }
+}
+
+function addStylesToDom (styles /* Array<StyleObject> */) {
+  for (var i = 0; i < styles.length; i++) {
+    var item = styles[i]
+    var domStyle = stylesInDom[item.id]
+    if (domStyle) {
+      domStyle.refs++
+      for (var j = 0; j < domStyle.parts.length; j++) {
+        domStyle.parts[j](item.parts[j])
+      }
+      for (; j < item.parts.length; j++) {
+        domStyle.parts.push(addStyle(item.parts[j]))
+      }
+      if (domStyle.parts.length > item.parts.length) {
+        domStyle.parts.length = item.parts.length
+      }
+    } else {
+      var parts = []
+      for (var j = 0; j < item.parts.length; j++) {
+        parts.push(addStyle(item.parts[j]))
+      }
+      stylesInDom[item.id] = { id: item.id, refs: 1, parts: parts }
+    }
+  }
+}
+
+function createStyleElement () {
+  var styleElement = document.createElement('style')
+  styleElement.type = 'text/css'
+  head.appendChild(styleElement)
+  return styleElement
+}
+
+function addStyle (obj /* StyleObjectPart */) {
+  var update, remove
+  var styleElement = document.querySelector('style[' + ssrIdKey + '~="' + obj.id + '"]')
+
+  if (styleElement) {
+    if (isProduction) {
+      // has SSR styles and in production mode.
+      // simply do nothing.
+      return noop
+    } else {
+      // has SSR styles but in dev mode.
+      // for some reason Chrome can't handle source map in server-rendered
+      // style tags - source maps in <style> only works if the style tag is
+      // created and inserted dynamically. So we remove the server rendered
+      // styles and inject new ones.
+      styleElement.parentNode.removeChild(styleElement)
+    }
+  }
+
+  if (isOldIE) {
+    // use singleton mode for IE9.
+    var styleIndex = singletonCounter++
+    styleElement = singletonElement || (singletonElement = createStyleElement())
+    update = applyToSingletonTag.bind(null, styleElement, styleIndex, false)
+    remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
+  } else {
+    // use multi-style-tag mode in all other cases
+    styleElement = createStyleElement()
+    update = applyToTag.bind(null, styleElement)
+    remove = function () {
+      styleElement.parentNode.removeChild(styleElement)
+    }
+  }
+
+  update(obj)
+
+  return function updateStyle (newObj /* StyleObjectPart */) {
+    if (newObj) {
+      if (newObj.css === obj.css &&
+          newObj.media === obj.media &&
+          newObj.sourceMap === obj.sourceMap) {
+        return
+      }
+      update(obj = newObj)
+    } else {
+      remove()
+    }
+  }
+}
+
+var replaceText = (function () {
+  var textStore = []
+
+  return function (index, replacement) {
+    textStore[index] = replacement
+    return textStore.filter(Boolean).join('\n')
+  }
+})()
+
+function applyToSingletonTag (styleElement, index, remove, obj) {
+  var css = remove ? '' : obj.css
+
+  if (styleElement.styleSheet) {
+    styleElement.styleSheet.cssText = replaceText(index, css)
+  } else {
+    var cssNode = document.createTextNode(css)
+    var childNodes = styleElement.childNodes
+    if (childNodes[index]) styleElement.removeChild(childNodes[index])
+    if (childNodes.length) {
+      styleElement.insertBefore(cssNode, childNodes[index])
+    } else {
+      styleElement.appendChild(cssNode)
+    }
+  }
+}
+
+function applyToTag (styleElement, obj) {
+  var css = obj.css
+  var media = obj.media
+  var sourceMap = obj.sourceMap
+
+  if (media) {
+    styleElement.setAttribute('media', media)
+  }
+  if (options.ssrId) {
+    styleElement.setAttribute(ssrIdKey, obj.id)
+  }
+
+  if (sourceMap) {
+    // https://developer.chrome.com/devtools/docs/javascript-debugging
+    // this makes source maps inside style tags work properly in Chrome
+    css += '\n/*# sourceURL=' + sourceMap.sources[0] + ' */'
+    // http://stackoverflow.com/a/26603875
+    css += '\n/*# sourceMappingURL=data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + ' */'
+  }
+
+  if (styleElement.styleSheet) {
+    styleElement.styleSheet.cssText = css
+  } else {
+    while (styleElement.firstChild) {
+      styleElement.removeChild(styleElement.firstChild)
+    }
+    styleElement.appendChild(document.createTextNode(css))
+  }
+}
+
+
+/***/ }),
+/* 24 */
+/***/ (function(module, exports) {
+
+/* globals __VUE_SSR_CONTEXT__ */
+
+// IMPORTANT: Do NOT use ES2015 features in this file.
+// This module is a runtime utility for cleaner component module output and will
+// be included in the final webpack user bundle.
+
+module.exports = function normalizeComponent (
+  rawScriptExports,
+  compiledTemplate,
+  functionalTemplate,
+  injectStyles,
+  scopeId,
+  moduleIdentifier /* server only */
+) {
+  var esModule
+  var scriptExports = rawScriptExports = rawScriptExports || {}
+
+  // ES6 modules interop
+  var type = typeof rawScriptExports.default
+  if (type === 'object' || type === 'function') {
+    esModule = rawScriptExports
+    scriptExports = rawScriptExports.default
+  }
+
+  // Vue.extend constructor export interop
+  var options = typeof scriptExports === 'function'
+    ? scriptExports.options
+    : scriptExports
+
+  // render functions
+  if (compiledTemplate) {
+    options.render = compiledTemplate.render
+    options.staticRenderFns = compiledTemplate.staticRenderFns
+    options._compiled = true
+  }
+
+  // functional template
+  if (functionalTemplate) {
+    options.functional = true
+  }
+
+  // scopedId
+  if (scopeId) {
+    options._scopeId = scopeId
+  }
+
+  var hook
+  if (moduleIdentifier) { // server build
+    hook = function (context) {
+      // 2.3 injection
+      context =
+        context || // cached call
+        (this.$vnode && this.$vnode.ssrContext) || // stateful
+        (this.parent && this.parent.$vnode && this.parent.$vnode.ssrContext) // functional
+      // 2.2 with runInNewContext: true
+      if (!context && typeof __VUE_SSR_CONTEXT__ !== 'undefined') {
+        context = __VUE_SSR_CONTEXT__
+      }
+      // inject component styles
+      if (injectStyles) {
+        injectStyles.call(this, context)
+      }
+      // register component module identifier for async chunk inferrence
+      if (context && context._registeredComponents) {
+        context._registeredComponents.add(moduleIdentifier)
+      }
+    }
+    // used by ssr in case component is cached and beforeCreate
+    // never gets called
+    options._ssrRegister = hook
+  } else if (injectStyles) {
+    hook = injectStyles
+  }
+
+  if (hook) {
+    var functional = options.functional
+    var existing = functional
+      ? options.render
+      : options.beforeCreate
+
+    if (!functional) {
+      // inject component registration as beforeCreate hook
+      options.beforeCreate = existing
+        ? [].concat(existing, hook)
+        : [hook]
+    } else {
+      // for template-only hot-reload because in that case the render fn doesn't
+      // go through the normalizer
+      options._injectStyles = hook
+      // register for functioal component in vue file
+      options.render = function renderWithStyleInjection (h, context) {
+        hook.call(context)
+        return existing(h, context)
+      }
+    }
+  }
+
+  return {
+    esModule: esModule,
+    exports: scriptExports,
+    options: options
+  }
+}
+
+
+/***/ }),
+/* 25 */
 /***/ (function(module, exports) {
 
 var toString = {}.toString;
@@ -1242,7 +1579,7 @@ module.exports = function (it) {
 
 
 /***/ }),
-/* 24 */
+/* 26 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var NATIVE_WEAK_MAP = __webpack_require__(104);
@@ -1312,7 +1649,7 @@ module.exports = {
 
 
 /***/ }),
-/* 25 */
+/* 27 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var requireObjectCoercible = __webpack_require__(17);
@@ -1325,14 +1662,14 @@ module.exports = function (argument) {
 
 
 /***/ }),
-/* 26 */
+/* 28 */
 /***/ (function(module, exports) {
 
 module.exports = {};
 
 
 /***/ }),
-/* 27 */
+/* 29 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/* eslint-env browser */
@@ -1603,7 +1940,7 @@ formatters.j = function (v) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20)))
 
 /***/ }),
-/* 28 */
+/* 30 */
 /***/ (function(module, exports) {
 
 module.exports = (() => {
@@ -1618,7 +1955,7 @@ module.exports = (() => {
 
 
 /***/ }),
-/* 29 */
+/* 31 */
 /***/ (function(module, exports, __webpack_require__) {
 
 /* WEBPACK VAR INJECTION */(function(process) {/* eslint-env browser */
@@ -1889,343 +2226,6 @@ formatters.j = function (v) {
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(20)))
 
 /***/ }),
-/* 30 */
-/***/ (function(module, exports, __webpack_require__) {
-
-/*
-  MIT License http://www.opensource.org/licenses/mit-license.php
-  Author Tobias Koppers @sokra
-  Modified by Evan You @yyx990803
-*/
-
-var hasDocument = typeof document !== 'undefined'
-
-if (typeof DEBUG !== 'undefined' && DEBUG) {
-  if (!hasDocument) {
-    throw new Error(
-    'vue-style-loader cannot be used in a non-browser environment. ' +
-    "Use { target: 'node' } in your Webpack config to indicate a server-rendering environment."
-  ) }
-}
-
-var listToStyles = __webpack_require__(189)
-
-/*
-type StyleObject = {
-  id: number;
-  parts: Array<StyleObjectPart>
-}
-
-type StyleObjectPart = {
-  css: string;
-  media: string;
-  sourceMap: ?string
-}
-*/
-
-var stylesInDom = {/*
-  [id: number]: {
-    id: number,
-    refs: number,
-    parts: Array<(obj?: StyleObjectPart) => void>
-  }
-*/}
-
-var head = hasDocument && (document.head || document.getElementsByTagName('head')[0])
-var singletonElement = null
-var singletonCounter = 0
-var isProduction = false
-var noop = function () {}
-var options = null
-var ssrIdKey = 'data-vue-ssr-id'
-
-// Force single-tag solution on IE6-9, which has a hard limit on the # of <style>
-// tags it will allow on a page
-var isOldIE = typeof navigator !== 'undefined' && /msie [6-9]\b/.test(navigator.userAgent.toLowerCase())
-
-module.exports = function (parentId, list, _isProduction, _options) {
-  isProduction = _isProduction
-
-  options = _options || {}
-
-  var styles = listToStyles(parentId, list)
-  addStylesToDom(styles)
-
-  return function update (newList) {
-    var mayRemove = []
-    for (var i = 0; i < styles.length; i++) {
-      var item = styles[i]
-      var domStyle = stylesInDom[item.id]
-      domStyle.refs--
-      mayRemove.push(domStyle)
-    }
-    if (newList) {
-      styles = listToStyles(parentId, newList)
-      addStylesToDom(styles)
-    } else {
-      styles = []
-    }
-    for (var i = 0; i < mayRemove.length; i++) {
-      var domStyle = mayRemove[i]
-      if (domStyle.refs === 0) {
-        for (var j = 0; j < domStyle.parts.length; j++) {
-          domStyle.parts[j]()
-        }
-        delete stylesInDom[domStyle.id]
-      }
-    }
-  }
-}
-
-function addStylesToDom (styles /* Array<StyleObject> */) {
-  for (var i = 0; i < styles.length; i++) {
-    var item = styles[i]
-    var domStyle = stylesInDom[item.id]
-    if (domStyle) {
-      domStyle.refs++
-      for (var j = 0; j < domStyle.parts.length; j++) {
-        domStyle.parts[j](item.parts[j])
-      }
-      for (; j < item.parts.length; j++) {
-        domStyle.parts.push(addStyle(item.parts[j]))
-      }
-      if (domStyle.parts.length > item.parts.length) {
-        domStyle.parts.length = item.parts.length
-      }
-    } else {
-      var parts = []
-      for (var j = 0; j < item.parts.length; j++) {
-        parts.push(addStyle(item.parts[j]))
-      }
-      stylesInDom[item.id] = { id: item.id, refs: 1, parts: parts }
-    }
-  }
-}
-
-function createStyleElement () {
-  var styleElement = document.createElement('style')
-  styleElement.type = 'text/css'
-  head.appendChild(styleElement)
-  return styleElement
-}
-
-function addStyle (obj /* StyleObjectPart */) {
-  var update, remove
-  var styleElement = document.querySelector('style[' + ssrIdKey + '~="' + obj.id + '"]')
-
-  if (styleElement) {
-    if (isProduction) {
-      // has SSR styles and in production mode.
-      // simply do nothing.
-      return noop
-    } else {
-      // has SSR styles but in dev mode.
-      // for some reason Chrome can't handle source map in server-rendered
-      // style tags - source maps in <style> only works if the style tag is
-      // created and inserted dynamically. So we remove the server rendered
-      // styles and inject new ones.
-      styleElement.parentNode.removeChild(styleElement)
-    }
-  }
-
-  if (isOldIE) {
-    // use singleton mode for IE9.
-    var styleIndex = singletonCounter++
-    styleElement = singletonElement || (singletonElement = createStyleElement())
-    update = applyToSingletonTag.bind(null, styleElement, styleIndex, false)
-    remove = applyToSingletonTag.bind(null, styleElement, styleIndex, true)
-  } else {
-    // use multi-style-tag mode in all other cases
-    styleElement = createStyleElement()
-    update = applyToTag.bind(null, styleElement)
-    remove = function () {
-      styleElement.parentNode.removeChild(styleElement)
-    }
-  }
-
-  update(obj)
-
-  return function updateStyle (newObj /* StyleObjectPart */) {
-    if (newObj) {
-      if (newObj.css === obj.css &&
-          newObj.media === obj.media &&
-          newObj.sourceMap === obj.sourceMap) {
-        return
-      }
-      update(obj = newObj)
-    } else {
-      remove()
-    }
-  }
-}
-
-var replaceText = (function () {
-  var textStore = []
-
-  return function (index, replacement) {
-    textStore[index] = replacement
-    return textStore.filter(Boolean).join('\n')
-  }
-})()
-
-function applyToSingletonTag (styleElement, index, remove, obj) {
-  var css = remove ? '' : obj.css
-
-  if (styleElement.styleSheet) {
-    styleElement.styleSheet.cssText = replaceText(index, css)
-  } else {
-    var cssNode = document.createTextNode(css)
-    var childNodes = styleElement.childNodes
-    if (childNodes[index]) styleElement.removeChild(childNodes[index])
-    if (childNodes.length) {
-      styleElement.insertBefore(cssNode, childNodes[index])
-    } else {
-      styleElement.appendChild(cssNode)
-    }
-  }
-}
-
-function applyToTag (styleElement, obj) {
-  var css = obj.css
-  var media = obj.media
-  var sourceMap = obj.sourceMap
-
-  if (media) {
-    styleElement.setAttribute('media', media)
-  }
-  if (options.ssrId) {
-    styleElement.setAttribute(ssrIdKey, obj.id)
-  }
-
-  if (sourceMap) {
-    // https://developer.chrome.com/devtools/docs/javascript-debugging
-    // this makes source maps inside style tags work properly in Chrome
-    css += '\n/*# sourceURL=' + sourceMap.sources[0] + ' */'
-    // http://stackoverflow.com/a/26603875
-    css += '\n/*# sourceMappingURL=data:application/json;base64,' + btoa(unescape(encodeURIComponent(JSON.stringify(sourceMap)))) + ' */'
-  }
-
-  if (styleElement.styleSheet) {
-    styleElement.styleSheet.cssText = css
-  } else {
-    while (styleElement.firstChild) {
-      styleElement.removeChild(styleElement.firstChild)
-    }
-    styleElement.appendChild(document.createTextNode(css))
-  }
-}
-
-
-/***/ }),
-/* 31 */
-/***/ (function(module, exports) {
-
-/* globals __VUE_SSR_CONTEXT__ */
-
-// IMPORTANT: Do NOT use ES2015 features in this file.
-// This module is a runtime utility for cleaner component module output and will
-// be included in the final webpack user bundle.
-
-module.exports = function normalizeComponent (
-  rawScriptExports,
-  compiledTemplate,
-  functionalTemplate,
-  injectStyles,
-  scopeId,
-  moduleIdentifier /* server only */
-) {
-  var esModule
-  var scriptExports = rawScriptExports = rawScriptExports || {}
-
-  // ES6 modules interop
-  var type = typeof rawScriptExports.default
-  if (type === 'object' || type === 'function') {
-    esModule = rawScriptExports
-    scriptExports = rawScriptExports.default
-  }
-
-  // Vue.extend constructor export interop
-  var options = typeof scriptExports === 'function'
-    ? scriptExports.options
-    : scriptExports
-
-  // render functions
-  if (compiledTemplate) {
-    options.render = compiledTemplate.render
-    options.staticRenderFns = compiledTemplate.staticRenderFns
-    options._compiled = true
-  }
-
-  // functional template
-  if (functionalTemplate) {
-    options.functional = true
-  }
-
-  // scopedId
-  if (scopeId) {
-    options._scopeId = scopeId
-  }
-
-  var hook
-  if (moduleIdentifier) { // server build
-    hook = function (context) {
-      // 2.3 injection
-      context =
-        context || // cached call
-        (this.$vnode && this.$vnode.ssrContext) || // stateful
-        (this.parent && this.parent.$vnode && this.parent.$vnode.ssrContext) // functional
-      // 2.2 with runInNewContext: true
-      if (!context && typeof __VUE_SSR_CONTEXT__ !== 'undefined') {
-        context = __VUE_SSR_CONTEXT__
-      }
-      // inject component styles
-      if (injectStyles) {
-        injectStyles.call(this, context)
-      }
-      // register component module identifier for async chunk inferrence
-      if (context && context._registeredComponents) {
-        context._registeredComponents.add(moduleIdentifier)
-      }
-    }
-    // used by ssr in case component is cached and beforeCreate
-    // never gets called
-    options._ssrRegister = hook
-  } else if (injectStyles) {
-    hook = injectStyles
-  }
-
-  if (hook) {
-    var functional = options.functional
-    var existing = functional
-      ? options.render
-      : options.beforeCreate
-
-    if (!functional) {
-      // inject component registration as beforeCreate hook
-      options.beforeCreate = existing
-        ? [].concat(existing, hook)
-        : [hook]
-    } else {
-      // for template-only hot-reload because in that case the render fn doesn't
-      // go through the normalizer
-      options._injectStyles = hook
-      // register for functioal component in vue file
-      options.render = function renderWithStyleInjection (h, context) {
-        hook.call(context)
-        return existing(h, context)
-      }
-    }
-  }
-
-  return {
-    esModule: esModule,
-    exports: scriptExports,
-    options: options
-  }
-}
-
-
-/***/ }),
 /* 32 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
@@ -2283,7 +2283,7 @@ module.exports = function (it) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var fails = __webpack_require__(1);
-var classof = __webpack_require__(23);
+var classof = __webpack_require__(25);
 
 var split = ''.split;
 
@@ -3115,7 +3115,7 @@ module.exports = [
 
 var bind = __webpack_require__(110);
 var IndexedObject = __webpack_require__(36);
-var toObject = __webpack_require__(25);
+var toObject = __webpack_require__(27);
 var toLength = __webpack_require__(19);
 var arraySpeciesCreate = __webpack_require__(229);
 
@@ -3751,7 +3751,7 @@ const parser = __webpack_require__(42);
 const on_1 = __webpack_require__(79);
 const bind = __webpack_require__(80);
 const Backoff = __webpack_require__(182);
-const debug = __webpack_require__(27)("socket.io-client:manager");
+const debug = __webpack_require__(29)("socket.io-client:manager");
 class Manager extends Emitter {
     constructor(uri, opts) {
         super();
@@ -4180,7 +4180,7 @@ function polling(opts) {
 // browser shim for xmlhttprequest module
 
 const hasCORS = __webpack_require__(164);
-const globalThis = __webpack_require__(28);
+const globalThis = __webpack_require__(30);
 
 module.exports = function(opts) {
   const xdomain = opts.xdomain;
@@ -4228,7 +4228,7 @@ const parseqs = __webpack_require__(41);
 const parser = __webpack_require__(21);
 const yeast = __webpack_require__(75);
 
-const debug = __webpack_require__(29)("engine.io-client:polling");
+const debug = __webpack_require__(31)("engine.io-client:polling");
 
 class Polling extends Transport {
   /**
@@ -4561,7 +4561,7 @@ const socket_io_parser_1 = __webpack_require__(42);
 const Emitter = __webpack_require__(14);
 const on_1 = __webpack_require__(79);
 const bind = __webpack_require__(80);
-const debug = __webpack_require__(27)("socket.io-client:socket");
+const debug = __webpack_require__(29)("socket.io-client:socket");
 /**
  * Internal events.
  * These events can't be emitted by the user.
@@ -5869,8 +5869,8 @@ module.exports = version && +version;
 
 var toIndexedObject = __webpack_require__(35);
 var addToUnscopables = __webpack_require__(237);
-var Iterators = __webpack_require__(26);
-var InternalStateModule = __webpack_require__(24);
+var Iterators = __webpack_require__(28);
+var InternalStateModule = __webpack_require__(26);
 var defineIterator = __webpack_require__(119);
 
 var ARRAY_ITERATOR = 'Array Iterator';
@@ -6034,7 +6034,7 @@ var createNonEnumerableProperty = __webpack_require__(9);
 var redefine = __webpack_require__(18);
 var wellKnownSymbol = __webpack_require__(2);
 var IS_PURE = __webpack_require__(54);
-var Iterators = __webpack_require__(26);
+var Iterators = __webpack_require__(28);
 var IteratorsCore = __webpack_require__(120);
 
 var IteratorPrototype = IteratorsCore.IteratorPrototype;
@@ -6165,7 +6165,7 @@ module.exports = {
 /***/ (function(module, exports, __webpack_require__) {
 
 var has = __webpack_require__(5);
-var toObject = __webpack_require__(25);
+var toObject = __webpack_require__(27);
 var sharedKey = __webpack_require__(53);
 var CORRECT_PROTOTYPE_GETTER = __webpack_require__(241);
 
@@ -6218,7 +6218,7 @@ module.exports = Object.setPrototypeOf || ('__proto__' in {} ? function () {
 /***/ (function(module, exports, __webpack_require__) {
 
 var TO_STRING_TAG_SUPPORT = __webpack_require__(61);
-var classofRaw = __webpack_require__(23);
+var classofRaw = __webpack_require__(25);
 var wellKnownSymbol = __webpack_require__(2);
 
 var TO_STRING_TAG = wellKnownSymbol('toStringTag');
@@ -6541,7 +6541,7 @@ module.exports = function (S, index, unicode) {
 /* 132 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var classof = __webpack_require__(23);
+var classof = __webpack_require__(25);
 var regexpExec = __webpack_require__(63);
 
 // `RegExpExec` abstract operation
@@ -6570,7 +6570,7 @@ module.exports = function (R, S) {
 /***/ (function(module, exports, __webpack_require__) {
 
 __webpack_require__(134);
-module.exports = __webpack_require__(290);
+module.exports = __webpack_require__(291);
 
 
 /***/ }),
@@ -38216,7 +38216,7 @@ const url_1 = __webpack_require__(159);
 const manager_1 = __webpack_require__(70);
 const socket_1 = __webpack_require__(77);
 Object.defineProperty(exports, "Socket", { enumerable: true, get: function () { return socket_1.Socket; } });
-const debug = __webpack_require__(27)("socket.io-client");
+const debug = __webpack_require__(29)("socket.io-client");
 /**
  * Module exports.
  */
@@ -38290,7 +38290,7 @@ Object.defineProperty(exports, "Manager", { enumerable: true, get: function () {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.url = void 0;
 const parseuri = __webpack_require__(69);
-const debug = __webpack_require__(27)("socket.io-client:url");
+const debug = __webpack_require__(29)("socket.io-client:url");
 /**
  * URL parser.
  *
@@ -38819,7 +38819,7 @@ module.exports.parser = __webpack_require__(21);
 
 const transports = __webpack_require__(71);
 const Emitter = __webpack_require__(14);
-const debug = __webpack_require__(29)("engine.io-client:socket");
+const debug = __webpack_require__(31)("engine.io-client:socket");
 const parser = __webpack_require__(21);
 const parseuri = __webpack_require__(69);
 const parseqs = __webpack_require__(41);
@@ -39518,9 +39518,9 @@ const XMLHttpRequest = __webpack_require__(72);
 const Polling = __webpack_require__(73);
 const Emitter = __webpack_require__(14);
 const { pick } = __webpack_require__(76);
-const globalThis = __webpack_require__(28);
+const globalThis = __webpack_require__(30);
 
-const debug = __webpack_require__(29)("engine.io-client:polling-xhr");
+const debug = __webpack_require__(31)("engine.io-client:polling-xhr");
 
 /**
  * Empty function
@@ -40475,7 +40475,7 @@ function plural(ms, msAbs, n, name) {
 /***/ (function(module, exports, __webpack_require__) {
 
 const Polling = __webpack_require__(73);
-const globalThis = __webpack_require__(28);
+const globalThis = __webpack_require__(30);
 
 const rNewline = /\n/g;
 const rEscapedNewline = /\\n/g;
@@ -40706,7 +40706,7 @@ const {
   defaultBinaryType
 } = __webpack_require__(177);
 
-const debug = __webpack_require__(29)("engine.io-client:websocket");
+const debug = __webpack_require__(31)("engine.io-client:websocket");
 
 // detect ReactNative environment
 const isReactNative =
@@ -43021,7 +43021,7 @@ module.exports = Array.isArray || function (arr) {
 /* 177 */
 /***/ (function(module, exports, __webpack_require__) {
 
-const globalThis = __webpack_require__(28);
+const globalThis = __webpack_require__(30);
 
 module.exports = {
   WebSocket: globalThis.WebSocket || globalThis.MozWebSocket,
@@ -56158,11 +56158,11 @@ function injectStyle (ssrContext) {
   if (disposed) return
   __webpack_require__(187)
 }
-var normalizeComponent = __webpack_require__(31)
+var normalizeComponent = __webpack_require__(24)
 /* script */
 var __vue_script__ = __webpack_require__(190)
 /* template */
-var __vue_template__ = __webpack_require__(289)
+var __vue_template__ = __webpack_require__(290)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
@@ -56211,7 +56211,7 @@ var content = __webpack_require__(188);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(30)("056fd37e", content, false, {});
+var update = __webpack_require__(23)("056fd37e", content, false, {});
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
@@ -56279,15 +56279,17 @@ module.exports = function listToStyles (parentId, list) {
 
 "use strict";
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent__ = __webpack_require__(191);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__elements_chatRoomDisplayComponent__ = __webpack_require__(295);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__elements_chatRoomDisplayComponent___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_0__elements_chatRoomDisplayComponent__);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__elements_leftSideChatComponent__ = __webpack_require__(275);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1__elements_leftSideChatComponent___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_1__elements_leftSideChatComponent__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__elements_defaultChatDisplayComponent__ = __webpack_require__(284);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__elements_defaultChatDisplayComponent__ = __webpack_require__(280);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_2__elements_defaultChatDisplayComponent___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_2__elements_defaultChatDisplayComponent__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__elements_preLoaderComponent__ = __webpack_require__(293);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__elements_preLoaderComponent__ = __webpack_require__(285);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_3__elements_preLoaderComponent___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_3__elements_preLoaderComponent__);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__eventBus__ = __webpack_require__(32);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__elements_chatPrivateDisplayComponent__ = __webpack_require__(300);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_4__elements_chatPrivateDisplayComponent___default = __webpack_require__.n(__WEBPACK_IMPORTED_MODULE_4__elements_chatPrivateDisplayComponent__);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_5__eventBus__ = __webpack_require__(32);
 //
 //
 //
@@ -56331,6 +56333,17 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
 
 
 
@@ -56341,38 +56354,48 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
     name: "chatComponent",
     props: ['username'],
     components: {
-        'chat-display-component': __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent___default.a,
+        'chat-room-display-component': __WEBPACK_IMPORTED_MODULE_0__elements_chatRoomDisplayComponent___default.a,
         'left-side-chat-component': __WEBPACK_IMPORTED_MODULE_1__elements_leftSideChatComponent___default.a,
         'default-chat-display-component': __WEBPACK_IMPORTED_MODULE_2__elements_defaultChatDisplayComponent___default.a,
-        'pre-loader-component': __WEBPACK_IMPORTED_MODULE_3__elements_preLoaderComponent___default.a
+        'pre-loader-component': __WEBPACK_IMPORTED_MODULE_3__elements_preLoaderComponent___default.a,
+        'chat-private-display-component': __WEBPACK_IMPORTED_MODULE_4__elements_chatPrivateDisplayComponent___default.a
+
     },
     data: function data() {
         return {
-            room_id: 0,
             error: false,
             error_message: '',
+            display_type: null,
+
+            //Rooms
+            room_id: 0,
             chatName: '',
             count_users: '',
             dataMessages: [],
             preLoader: false,
             openMountedChat: false,
-            online_users: null
+
+            //Private
+            private_id: 0
 
         };
     },
     mounted: function mounted() {
         var _this = this;
 
-        __WEBPACK_IMPORTED_MODULE_4__eventBus__["a" /* default */].$on('error', function (message) {
+        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('error', function (message) {
             _this.showError(message);
         });
-        __WEBPACK_IMPORTED_MODULE_4__eventBus__["a" /* default */].$on('open-chat-display', function (room_id) {
-            _this.openChatDisplay(room_id);
+        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('open-chat-room-display', function (room_id) {
+            _this.openChatRoomDisplay(room_id);
+        });
+        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('open-chat-private-display', function (private_id) {
+            _this.openChatPrivateDisplay(private_id);
         });
         var socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
         socket.on("message-room:App\\Events\\NewMessage", function (data) {
             if (this.room_id == Number.parseInt(data.message.chat_room_id)) {
-                __WEBPACK_IMPORTED_MODULE_4__eventBus__["a" /* default */].$emit('message-delivered', data);
+                __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('message-delivered', data);
             }
         }.bind(this));
         socket.on("join-user:App\\Events\\JoinUser", function (data) {}.bind(this));
@@ -56387,10 +56410,12 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 this.error_message = '';
             }.bind(this), 3500);
         },
-        openChatDisplay: function openChatDisplay(room_id) {
+        openChatRoomDisplay: function openChatRoomDisplay(room_id) {
             var _this2 = this;
 
+            this.private_id = 0;
             if (room_id != this.room_id) {
+                this.display_type = 'room';
                 this.room_id = -1;
                 this.preLoader = true;
                 this.openMountedChat = false;
@@ -56398,14 +56423,13 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 axios.get('/looechat/get-chat-info/' + room_id).then(function (response) {
                     _this2.chatName = response.data.name;
                     _this2.count_users = response.data.users_count;
-                    _this2.online_users = response.data.online_users;
                     axios.get('/looechat/get-messages/' + room_id).then(function (response) {
                         response.data.forEach(function (e) {
-                            e = __WEBPACK_IMPORTED_MODULE_0__elements_chatDisplayComponent___default.a.methods.getCurrentDate(e);
+                            e = __WEBPACK_IMPORTED_MODULE_0__elements_chatRoomDisplayComponent___default.a.methods.getCurrentDate(e);
                             _this2.dataMessages.push(e);
                         });
                         _this2.room_id = room_id;
-                        __WEBPACK_IMPORTED_MODULE_4__eventBus__["a" /* default */].$on('show-mounted-chat-display', function (this_) {
+                        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('show-mounted-chat-display', function (this_) {
                             setTimeout(function () {
                                 this.preLoader = false;
                                 setTimeout(function () {
@@ -56414,9 +56438,40 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                                 this.openMountedChat = true;
                             }.bind(this), 1000);
 
-                            __WEBPACK_IMPORTED_MODULE_4__eventBus__["a" /* default */].$emit('open-chat-display-set-class', this.room_id);
+                            __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('open-chat-display-set-class', this.room_id);
                         }.bind(_this2));
                     });
+                });
+            }
+        },
+        openChatPrivateDisplay: function openChatPrivateDisplay(private_id) {
+            var _this3 = this;
+
+            this.room_id = 0;
+            if (private_id != this.private_id) {
+                this.display_type = 'private';
+                this.private_id = -1;
+                this.preLoader = true;
+                this.openMountedChat = false;
+                this.dataMessages = [];
+                axios.get('/looechat/get-private-messages/' + private_id).then(function (response) {
+                    _this3.chatName = response.data[0].user_recipient.username;
+                    response.data.forEach(function (e) {
+                        e = __WEBPACK_IMPORTED_MODULE_4__elements_chatPrivateDisplayComponent___default.a.methods.getCurrentDate(e);
+                        _this3.dataMessages.push(e);
+                    });
+                    _this3.private_id = private_id;
+                    __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('show-mounted-chat-display', function (this_) {
+                        setTimeout(function () {
+                            this.preLoader = false;
+                            setTimeout(function () {
+                                this_.scrollBottom();
+                            }, 0);
+                            this.openMountedChat = true;
+                        }.bind(this), 1000);
+
+                        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('open-chat-display-set-class', this.private_id);
+                    }.bind(_this3));
                 });
             }
         }
@@ -56426,228 +56481,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 });
 
 /***/ }),
-/* 191 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var disposed = false
-function injectStyle (ssrContext) {
-  if (disposed) return
-  __webpack_require__(192)
-}
-var normalizeComponent = __webpack_require__(31)
-/* script */
-var __vue_script__ = __webpack_require__(194)
-/* template */
-var __vue_template__ = __webpack_require__(274)
-/* template functional */
-var __vue_template_functional__ = false
-/* styles */
-var __vue_styles__ = injectStyle
-/* scopeId */
-var __vue_scopeId__ = "data-v-54f2e038"
-/* moduleIdentifier (server only) */
-var __vue_module_identifier__ = null
-var Component = normalizeComponent(
-  __vue_script__,
-  __vue_template__,
-  __vue_template_functional__,
-  __vue_styles__,
-  __vue_scopeId__,
-  __vue_module_identifier__
-)
-Component.options.__file = "resources/assets/js/components/elements/chatDisplayComponent.vue"
-
-/* hot reload */
-if (false) {(function () {
-  var hotAPI = require("vue-hot-reload-api")
-  hotAPI.install(require("vue"), false)
-  if (!hotAPI.compatible) return
-  module.hot.accept()
-  if (!module.hot.data) {
-    hotAPI.createRecord("data-v-54f2e038", Component.options)
-  } else {
-    hotAPI.reload("data-v-54f2e038", Component.options)
-  }
-  module.hot.dispose(function (data) {
-    disposed = true
-  })
-})()}
-
-module.exports = Component.exports
-
-
-/***/ }),
-/* 192 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(193);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(30)("556fc51a", content, false, {});
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-54f2e038\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./chatDisplayComponent.vue", function() {
-     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-54f2e038\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./chatDisplayComponent.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 193 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(22)(false);
-// imports
-
-
-// module
-exports.push([module.i, "\n.custom-chat-box[data-v-54f2e038]{\n    min-height: 450px;\n}\n.list-unstyled[data-v-54f2e038]{\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-54f2e038]{\n    background-color: #df7166;\n    color: white;\n    border: none;\n}\n.btn-custom-primary[data-v-54f2e038]:focus{\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\n\n\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 194 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__eventBus__ = __webpack_require__(32);
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__ = __webpack_require__(82);
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-
-
-
-
-
-/* harmony default export */ __webpack_exports__["default"] = ({
-    name: "chatDisplayComponent",
-    props: ['username', "chatName", "messages", "room_id", "count_users", "online_users"],
-    components: {
-        'simplebar': __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
-    },
-    data: function data() {
-        return {
-            dataMessages: [],
-            message: ''
-        };
-    },
-    created: function created() {
-        var _this = this;
-
-        this.dataMessages = [];
-        this.messages.forEach(function (e) {
-            _this.dataMessages.push(e);
-        });
-        //Listen 'message-delivered' event
-        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
-            data.message = this.getCurrentDate(data.message);
-            this.dataMessages.push(data.message);
-        }.bind(this));
-    },
-    mounted: function mounted() {
-        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('show-mounted-chat-display', this);
-    },
-    updated: function updated() {
-        this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
-    },
-
-    methods: {
-        sendMessage: function sendMessage() {
-            var _this2 = this;
-
-            if (this.message != '') {
-                axios({
-                    method: 'get',
-                    url: '/looechat/send-message',
-                    params: { message: this.message, room_id: this.room_id }
-                }).then(function (response) {
-                    _this2.message = '';
-                });
-            }
-        },
-
-        //Sys
-        getCurrentDate: function getCurrentDate(message) {
-            var date = new Date(message.created_at);
-            var cur_date = date.getHours() + ':' + date.getMinutes();
-            message.date = cur_date;
-            return message;
-        },
-        scrollBottom: function scrollBottom() {
-            this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
-        }
-    },
-    destroyed: function destroyed() {}
-});
-
-/***/ }),
+/* 191 */,
+/* 192 */,
+/* 193 */,
+/* 194 */,
 /* 195 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -58474,7 +58311,7 @@ module.exports = function (originalArray, length) {
 /* 230 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var classof = __webpack_require__(23);
+var classof = __webpack_require__(25);
 
 // `IsArray` abstract operation
 // https://tc39.es/ecma262/#sec-isarray
@@ -58655,7 +58492,7 @@ var IteratorPrototype = __webpack_require__(120).IteratorPrototype;
 var create = __webpack_require__(117);
 var createPropertyDescriptor = __webpack_require__(50);
 var setToStringTag = __webpack_require__(60);
-var Iterators = __webpack_require__(26);
+var Iterators = __webpack_require__(28);
 
 var returnThis = function () { return this; };
 
@@ -58719,7 +58556,7 @@ var fails = __webpack_require__(1);
 var objectKeys = __webpack_require__(118);
 var getOwnPropertySymbolsModule = __webpack_require__(107);
 var propertyIsEnumerableModule = __webpack_require__(99);
-var toObject = __webpack_require__(25);
+var toObject = __webpack_require__(27);
 var IndexedObject = __webpack_require__(36);
 
 var nativeAssign = Object.assign;
@@ -58873,7 +58710,7 @@ module.exports = {
 "use strict";
 
 var charAt = __webpack_require__(125).charAt;
-var InternalStateModule = __webpack_require__(24);
+var InternalStateModule = __webpack_require__(26);
 var defineIterator = __webpack_require__(119);
 
 var STRING_ITERATOR = 'String Iterator';
@@ -58914,7 +58751,7 @@ var InternalMetadataModule = __webpack_require__(62);
 var collection = __webpack_require__(253);
 var collectionWeak = __webpack_require__(259);
 var isObject = __webpack_require__(7);
-var enforceIternalState = __webpack_require__(24).enforce;
+var enforceIternalState = __webpack_require__(26).enforce;
 var NATIVE_WEAK_MAP = __webpack_require__(104);
 
 var IS_IE11 = !global.ActiveXObject && 'ActiveXObject' in global;
@@ -59098,7 +58935,7 @@ module.exports = function (CONSTRUCTOR_NAME, wrapper, common) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var wellKnownSymbol = __webpack_require__(2);
-var Iterators = __webpack_require__(26);
+var Iterators = __webpack_require__(28);
 
 var ITERATOR = wellKnownSymbol('iterator');
 var ArrayPrototype = Array.prototype;
@@ -59114,7 +58951,7 @@ module.exports = function (it) {
 /***/ (function(module, exports, __webpack_require__) {
 
 var classof = __webpack_require__(123);
-var Iterators = __webpack_require__(26);
+var Iterators = __webpack_require__(28);
 var wellKnownSymbol = __webpack_require__(2);
 
 var ITERATOR = wellKnownSymbol('iterator');
@@ -59221,7 +59058,7 @@ var anInstance = __webpack_require__(128);
 var iterate = __webpack_require__(127);
 var ArrayIterationModule = __webpack_require__(58);
 var $has = __webpack_require__(5);
-var InternalStateModule = __webpack_require__(24);
+var InternalStateModule = __webpack_require__(26);
 
 var setInternalState = InternalStateModule.set;
 var internalStateGetterFor = InternalStateModule.getterFor;
@@ -61856,7 +61693,7 @@ $({ target: 'Array', proto: true, forced: !STRICT_METHOD || !USES_TO_LENGTH || C
 /***/ (function(module, exports, __webpack_require__) {
 
 var aFunction = __webpack_require__(111);
-var toObject = __webpack_require__(25);
+var toObject = __webpack_require__(27);
 var IndexedObject = __webpack_require__(36);
 var toLength = __webpack_require__(19);
 
@@ -61901,7 +61738,7 @@ module.exports = {
 /* 267 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var classof = __webpack_require__(23);
+var classof = __webpack_require__(25);
 var global = __webpack_require__(0);
 
 module.exports = classof(global.process) == 'process';
@@ -62148,7 +61985,7 @@ fixRegExpWellKnownSymbolLogic('replace', 2, function (REPLACE, nativeReplace, ma
 /* 273 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var toObject = __webpack_require__(25);
+var toObject = __webpack_require__(27);
 
 var floor = Math.floor;
 var replace = ''.replace;
@@ -62191,7 +62028,1207 @@ module.exports = function (matched, str, position, captures, namedCaptures, repl
 
 
 /***/ }),
-/* 274 */
+/* 274 */,
+/* 275 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var disposed = false
+function injectStyle (ssrContext) {
+  if (disposed) return
+  __webpack_require__(276)
+}
+var normalizeComponent = __webpack_require__(24)
+/* script */
+var __vue_script__ = __webpack_require__(278)
+/* template */
+var __vue_template__ = __webpack_require__(279)
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = injectStyle
+/* scopeId */
+var __vue_scopeId__ = "data-v-2942bf34"
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __vue_script__,
+  __vue_template__,
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "resources/assets/js/components/elements/leftSideChatComponent.vue"
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-2942bf34", Component.options)
+  } else {
+    hotAPI.reload("data-v-2942bf34", Component.options)
+  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 276 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(277);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(23)("5032859e", content, false, {});
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-2942bf34\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./leftSideChatComponent.vue", function() {
+     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-2942bf34\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./leftSideChatComponent.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 277 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(22)(false);
+// imports
+
+
+// module
+exports.push([module.i, "\n.chat-leftsidebar[data-v-2942bf34]{\n    min-height: 655px;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 278 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__eventBus__ = __webpack_require__(32);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__ = __webpack_require__(82);
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+
+
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+    name: "leftSideChatComponent",
+    props: ['username'],
+    components: {
+        simplebar: __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
+    },
+    data: function data() {
+        return {
+            chats_rooms: [],
+            chats_privates: []
+        };
+    },
+    mounted: function mounted() {
+        var _this = this;
+
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('open-chat-display-set-class', function (room_id) {
+            /*
+            this.chats.forEach(e => {
+                if(e.statusActive == true){
+                    e.statusActive = false;
+                }
+                if(e.chat_room_id == room_id){
+                    e.statusActive = true;
+                }
+            })*/
+            console.log('SET CLASS - leftSideComponent');
+        }.bind(this));
+        axios.get('/looechat/get-user-chat-rooms').then(function (response) {
+            response.data.forEach(function (e) {
+                e.statusActive = false;
+                _this.chats_rooms.push(e);
+            });
+
+            /*EventBus.$on('join-chat-action', function (id){
+                axios.get('/looechat/join/' + id).then(response => {
+                    if(response.status == 200){
+                        this.chats.push(response.data);
+                    }
+                }).catch(error => {
+                    if(error.response.status === 405){
+                        EventBus.$emit('error', error.response.data.error);
+                    }else if(error.response.status === 404){
+                        EventBus.$emit('error', error.response.data.error);
+                    }
+                });
+            }.bind(this))*/
+        });
+        axios.get('/looechat/get-user-chat-privates').then(function (response) {
+            response.data.forEach(function (e) {
+                e.statusActive = false;
+                _this.chats_privates.push(e);
+            });
+        });
+    },
+
+    methods: {
+        openChatRoomDisplay: function openChatRoomDisplay(event) {
+            __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('open-chat-room-display', event.currentTarget.id);
+        },
+        openChatPrivateDisplay: function openChatPrivateDisplay(event) {
+            __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('open-chat-private-display', event.currentTarget.id);
+        }
+    }
+});
+
+/***/ }),
+/* 279 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c("div", { staticClass: "chat-leftsidebar" }, [
+    _c("div", { staticClass: "p-3 border-bottom" }, [
+      _c("div", { staticClass: "media" }, [
+        _vm._m(0),
+        _vm._v(" "),
+        _c("div", { staticClass: "media-body" }, [
+          _c("h5", { staticClass: "font-size-15 mt-0 mb-1" }, [
+            _vm._v(
+              "\n                    " +
+                _vm._s(_vm.username) +
+                "\n                "
+            )
+          ]),
+          _vm._v(" "),
+          _vm._m(1)
+        ]),
+        _vm._v(" "),
+        _vm._m(2)
+      ])
+    ]),
+    _vm._v(" "),
+    _c("div", { staticClass: "tab-content py-4" }, [
+      _c(
+        "div",
+        { staticClass: "tab-pane show active", attrs: { id: "chat" } },
+        [
+          _c(
+            "div",
+            [
+              _c("h5", { staticClass: "font-size-14 px-3 mb-3" }, [
+                _vm._v("Recent")
+              ]),
+              _vm._v(" "),
+              _vm.chats_rooms.length == 0 && _vm.chats_privates.length == 0
+                ? _c("p", { staticClass: "px-3 mb-3" }, [
+                    _vm._v(
+                      "\n                    You dont have chats 😔\n                "
+                    )
+                  ])
+                : _vm._e(),
+              _vm._v(" "),
+              _c(
+                "simplebar",
+                {
+                  staticClass: "list-unstyled chat-list",
+                  staticStyle: { "max-height": "475px" }
+                },
+                [
+                  _vm._l(_vm.chats_rooms, function(chat) {
+                    return _c(
+                      "li",
+                      {
+                        attrs: { id: chat.chatroom.id },
+                        on: {
+                          click: function($event) {
+                            $event.preventDefault()
+                            return _vm.openChatRoomDisplay($event)
+                          }
+                        }
+                      },
+                      [
+                        _c("a", { attrs: { href: "" } }, [
+                          _c("div", { staticClass: "media" }, [
+                            _c(
+                              "div",
+                              {
+                                staticClass:
+                                  "user-img online align-self-center mr-3"
+                              },
+                              [
+                                _c("img", {
+                                  staticClass: "rounded-circle avatar-xs",
+                                  attrs: {
+                                    src: "chat/images/users/avatar-2.jpg",
+                                    alt: ""
+                                  }
+                                }),
+                                _vm._v(" "),
+                                _c("span", { staticClass: "user-status" })
+                              ]
+                            ),
+                            _vm._v(" "),
+                            _c(
+                              "div",
+                              { staticClass: "media-body overflow-hidden" },
+                              [
+                                _c(
+                                  "h5",
+                                  {
+                                    staticClass:
+                                      "text-truncate font-size-14 mb-1"
+                                  },
+                                  [_vm._v(_vm._s(chat.chatroom.name))]
+                                ),
+                                _vm._v(" "),
+                                _c("p", { staticClass: "text-truncate mb-0" }, [
+                                  _vm._v("Hey! there I'm available")
+                                ])
+                              ]
+                            ),
+                            _vm._v(" "),
+                            _c("div", { staticClass: "font-size-11" }, [
+                              _vm._v("xx min")
+                            ])
+                          ])
+                        ])
+                      ]
+                    )
+                  }),
+                  _vm._v(" "),
+                  _vm._l(_vm.chats_privates, function(chat) {
+                    return _c(
+                      "li",
+                      {
+                        attrs: { id: chat.id },
+                        on: {
+                          click: function($event) {
+                            $event.preventDefault()
+                            return _vm.openChatPrivateDisplay($event)
+                          }
+                        }
+                      },
+                      [
+                        _c("a", { attrs: { href: "" } }, [
+                          _c("div", { staticClass: "media" }, [
+                            _c(
+                              "div",
+                              {
+                                staticClass:
+                                  "user-img online align-self-center mr-3"
+                              },
+                              [
+                                _c("img", {
+                                  staticClass: "rounded-circle avatar-xs",
+                                  attrs: {
+                                    src: "chat/images/users/avatar-2.jpg",
+                                    alt: ""
+                                  }
+                                }),
+                                _vm._v(" "),
+                                _c("span", { staticClass: "user-status" })
+                              ]
+                            ),
+                            _vm._v(" "),
+                            _c(
+                              "div",
+                              { staticClass: "media-body overflow-hidden" },
+                              [
+                                _c(
+                                  "h5",
+                                  {
+                                    staticClass:
+                                      "text-truncate font-size-14 mb-1"
+                                  },
+                                  [_vm._v(_vm._s(chat.recipient.username))]
+                                ),
+                                _vm._v(" "),
+                                _c("p", { staticClass: "text-truncate mb-0" }, [
+                                  _vm._v("Hey! there I'm available")
+                                ])
+                              ]
+                            ),
+                            _vm._v(" "),
+                            _c("div", { staticClass: "font-size-11" }, [
+                              _vm._v("xx min")
+                            ])
+                          ])
+                        ])
+                      ]
+                    )
+                  })
+                ],
+                2
+              )
+            ],
+            1
+          )
+        ]
+      )
+    ])
+  ])
+}
+var staticRenderFns = [
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("div", { staticClass: "align-self-center mr-3" }, [
+      _c("img", {
+        staticClass: "avatar-xs rounded-circle",
+        attrs: { src: "chat/images/users/avatar-2.jpg", alt: "" }
+      })
+    ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("p", { staticClass: "text-muted mb-0" }, [
+      _c("i", { staticClass: "mdi mdi-circle text-success align-middle mr-1" }),
+      _vm._v(" В сети")
+    ])
+  },
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c("div", [
+      _c("div", { staticClass: "dropdown chat-noti-dropdown" }, [
+        _c(
+          "button",
+          {
+            staticClass: "btn dropdown-toggle",
+            attrs: {
+              type: "button",
+              "data-toggle": "dropdown",
+              "aria-haspopup": "true",
+              "aria-expanded": "false"
+            }
+          },
+          [_c("i", { staticClass: "mdi mdi-dots-horizontal font-size-20" })]
+        ),
+        _vm._v(" "),
+        _c("div", { staticClass: "dropdown-menu dropdown-menu-right" }, [
+          _c("a", { staticClass: "dropdown-item", attrs: { href: "#" } }, [
+            _vm._v("Добавить пользователя")
+          ])
+        ])
+      ])
+    ])
+  }
+]
+render._withStripped = true
+module.exports = { render: render, staticRenderFns: staticRenderFns }
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+    require("vue-hot-reload-api")      .rerender("data-v-2942bf34", module.exports)
+  }
+}
+
+/***/ }),
+/* 280 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var disposed = false
+function injectStyle (ssrContext) {
+  if (disposed) return
+  __webpack_require__(281)
+}
+var normalizeComponent = __webpack_require__(24)
+/* script */
+var __vue_script__ = __webpack_require__(283)
+/* template */
+var __vue_template__ = __webpack_require__(284)
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = injectStyle
+/* scopeId */
+var __vue_scopeId__ = "data-v-6f24699a"
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __vue_script__,
+  __vue_template__,
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "resources/assets/js/components/elements/defaultChatDisplayComponent.vue"
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-6f24699a", Component.options)
+  } else {
+    hotAPI.reload("data-v-6f24699a", Component.options)
+  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 281 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(282);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(23)("acee10f6", content, false, {});
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-6f24699a\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./defaultChatDisplayComponent.vue", function() {
+     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-6f24699a\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./defaultChatDisplayComponent.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 282 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(22)(false);
+// imports
+
+
+// module
+exports.push([module.i, "\n.default-display[data-v-6f24699a]{\n    min-height: 655px;\n    background-color: #fbfbfb;\n}\n\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 283 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__eventBus__ = __webpack_require__(32);
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+    name: "defaultChatDisplayComponent",
+    methods: {
+        joinAction: function joinAction(e) {
+            __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('join-chat-action', e.target.id);
+        }
+    }
+});
+
+/***/ }),
+/* 284 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c(
+    "div",
+    { staticClass: "w-100 user-chat mt-4 mt-sm-0 default-display" },
+    [
+      _c("div", { staticClass: "container-fluid h-100" }, [
+        _c(
+          "div",
+          {
+            staticClass: "row h-100 justify-content-center align-items-center"
+          },
+          [
+            _c("div", { staticClass: "col-12 text-center" }, [
+              _c("h2", [_vm._v("LooE chat")]),
+              _vm._v(" "),
+              _c("p", [_vm._v("Список рекомендуемы чатов")]),
+              _vm._v(" "),
+              _c("div", { staticClass: "row justify-content-center" }, [
+                _c("div", { staticClass: "col-12" }, [
+                  _c(
+                    "button",
+                    {
+                      staticClass: "btn btn-outline-primary",
+                      attrs: { id: "1", href: "" },
+                      on: {
+                        click: function($event) {
+                          $event.preventDefault()
+                          return _vm.joinAction($event)
+                        }
+                      }
+                    },
+                    [_vm._v("ALPHA TEST SERVER")]
+                  ),
+                  _vm._v(" "),
+                  _c(
+                    "button",
+                    {
+                      staticClass: "btn btn-outline-primary",
+                      attrs: { id: "2", href: "" },
+                      on: {
+                        click: function($event) {
+                          $event.preventDefault()
+                          return _vm.joinAction($event)
+                        }
+                      }
+                    },
+                    [_vm._v("ALPHA TEST SERVER2")]
+                  )
+                ])
+              ])
+            ])
+          ]
+        )
+      ])
+    ]
+  )
+}
+var staticRenderFns = []
+render._withStripped = true
+module.exports = { render: render, staticRenderFns: staticRenderFns }
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+    require("vue-hot-reload-api")      .rerender("data-v-6f24699a", module.exports)
+  }
+}
+
+/***/ }),
+/* 285 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var disposed = false
+function injectStyle (ssrContext) {
+  if (disposed) return
+  __webpack_require__(286)
+}
+var normalizeComponent = __webpack_require__(24)
+/* script */
+var __vue_script__ = __webpack_require__(288)
+/* template */
+var __vue_template__ = __webpack_require__(289)
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = injectStyle
+/* scopeId */
+var __vue_scopeId__ = "data-v-5d8f9150"
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __vue_script__,
+  __vue_template__,
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "resources/assets/js/components/elements/preLoaderComponent.vue"
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-5d8f9150", Component.options)
+  } else {
+    hotAPI.reload("data-v-5d8f9150", Component.options)
+  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 286 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(287);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(23)("87105444", content, false, {});
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-5d8f9150\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./preLoaderComponent.vue", function() {
+     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-5d8f9150\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./preLoaderComponent.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 287 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(22)(false);
+// imports
+
+
+// module
+exports.push([module.i, "\n.spinner-border[data-v-5d8f9150]{\n    color: #df7166;\n}\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 288 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+    name: "preLoaderComponent"
+});
+
+/***/ }),
+/* 289 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _vm._m(0)
+}
+var staticRenderFns = [
+  function() {
+    var _vm = this
+    var _h = _vm.$createElement
+    var _c = _vm._self._c || _h
+    return _c(
+      "div",
+      { staticClass: "w-100 user-chat mt-4 mt-sm-0 default-display" },
+      [
+        _c("div", { staticClass: "container-fluid h-100" }, [
+          _c(
+            "div",
+            {
+              staticClass: "row h-100 justify-content-center align-items-center"
+            },
+            [
+              _c("div", { staticClass: "col-12 text-center" }, [
+                _c(
+                  "div",
+                  { staticClass: "spinner-border", attrs: { role: "status" } },
+                  [_c("span", { staticClass: "visually-hidden" })]
+                )
+              ])
+            ]
+          )
+        ])
+      ]
+    )
+  }
+]
+render._withStripped = true
+module.exports = { render: render, staticRenderFns: staticRenderFns }
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+    require("vue-hot-reload-api")      .rerender("data-v-5d8f9150", module.exports)
+  }
+}
+
+/***/ }),
+/* 290 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var render = function() {
+  var _vm = this
+  var _h = _vm.$createElement
+  var _c = _vm._self._c || _h
+  return _c("div", { attrs: { id: "layout-wrapper" } }, [
+    _vm.error
+      ? _c("div", { staticClass: "alert alert-danger error-message" }, [
+          _vm._v("\n        " + _vm._s(_vm.error_message) + "\n    ")
+        ])
+      : _vm._e(),
+    _vm._v(" "),
+    _c("div", { staticClass: "main-content" }, [
+      _c("div", { staticClass: "page-content" }, [
+        _c("div", { staticClass: "container-fluid" }, [
+          _c(
+            "div",
+            { staticClass: "d-lg-flex mb-4" },
+            [
+              _c("left-side-chat-component", {
+                attrs: { username: _vm.username }
+              }),
+              _vm._v(" "),
+              _vm.room_id == 0 &&
+              _vm.room_id != -1 &&
+              _vm.private_id == 0 &&
+              _vm.private_id != -1
+                ? _c("default-chat-display-component")
+                : _vm._e(),
+              _vm._v(" "),
+              _vm.display_type == "room" &&
+              _vm.room_id != -1 &&
+              _vm.room_id != 0
+                ? _c("chat-room-display-component", {
+                    directives: [
+                      {
+                        name: "show",
+                        rawName: "v-show",
+                        value: _vm.openMountedChat,
+                        expression: "openMountedChat"
+                      }
+                    ],
+                    attrs: {
+                      chatName: _vm.chatName,
+                      messages: _vm.dataMessages,
+                      username: _vm.username,
+                      room_id: _vm.room_id,
+                      count_users: _vm.count_users
+                    }
+                  })
+                : _vm._e(),
+              _vm._v(" "),
+              _vm.display_type == "private" &&
+              _vm.private_id != -1 &&
+              _vm.private_id != 0
+                ? _c("chat-private-display-component", {
+                    directives: [
+                      {
+                        name: "show",
+                        rawName: "v-show",
+                        value: _vm.openMountedChat,
+                        expression: "openMountedChat"
+                      }
+                    ],
+                    attrs: {
+                      chatName: _vm.chatName,
+                      messages: _vm.dataMessages,
+                      username: _vm.username,
+                      private_id: _vm.private_id
+                    }
+                  })
+                : _vm._e(),
+              _vm._v(" "),
+              _c("pre-loader-component", {
+                directives: [
+                  {
+                    name: "show",
+                    rawName: "v-show",
+                    value: _vm.preLoader,
+                    expression: "preLoader"
+                  }
+                ]
+              })
+            ],
+            1
+          )
+        ])
+      ])
+    ])
+  ])
+}
+var staticRenderFns = []
+render._withStripped = true
+module.exports = { render: render, staticRenderFns: staticRenderFns }
+if (false) {
+  module.hot.accept()
+  if (module.hot.data) {
+    require("vue-hot-reload-api")      .rerender("data-v-c303cd04", module.exports)
+  }
+}
+
+/***/ }),
+/* 291 */
+/***/ (function(module, exports) {
+
+// removed by extract-text-webpack-plugin
+
+/***/ }),
+/* 292 */,
+/* 293 */,
+/* 294 */,
+/* 295 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var disposed = false
+function injectStyle (ssrContext) {
+  if (disposed) return
+  __webpack_require__(296)
+}
+var normalizeComponent = __webpack_require__(24)
+/* script */
+var __vue_script__ = __webpack_require__(298)
+/* template */
+var __vue_template__ = __webpack_require__(299)
+/* template functional */
+var __vue_template_functional__ = false
+/* styles */
+var __vue_styles__ = injectStyle
+/* scopeId */
+var __vue_scopeId__ = "data-v-553cae42"
+/* moduleIdentifier (server only) */
+var __vue_module_identifier__ = null
+var Component = normalizeComponent(
+  __vue_script__,
+  __vue_template__,
+  __vue_template_functional__,
+  __vue_styles__,
+  __vue_scopeId__,
+  __vue_module_identifier__
+)
+Component.options.__file = "resources/assets/js/components/elements/chatRoomDisplayComponent.vue"
+
+/* hot reload */
+if (false) {(function () {
+  var hotAPI = require("vue-hot-reload-api")
+  hotAPI.install(require("vue"), false)
+  if (!hotAPI.compatible) return
+  module.hot.accept()
+  if (!module.hot.data) {
+    hotAPI.createRecord("data-v-553cae42", Component.options)
+  } else {
+    hotAPI.reload("data-v-553cae42", Component.options)
+  }
+  module.hot.dispose(function (data) {
+    disposed = true
+  })
+})()}
+
+module.exports = Component.exports
+
+
+/***/ }),
+/* 296 */
+/***/ (function(module, exports, __webpack_require__) {
+
+// style-loader: Adds some css to the DOM by adding a <style> tag
+
+// load the styles
+var content = __webpack_require__(297);
+if(typeof content === 'string') content = [[module.i, content, '']];
+if(content.locals) module.exports = content.locals;
+// add the styles to the DOM
+var update = __webpack_require__(23)("4877941c", content, false, {});
+// Hot Module Replacement
+if(false) {
+ // When the styles change, update the <style> tags
+ if(!content.locals) {
+   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-553cae42\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./chatRoomDisplayComponent.vue", function() {
+     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-553cae42\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./chatRoomDisplayComponent.vue");
+     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
+     update(newContent);
+   });
+ }
+ // When the module is disposed, remove the <style> tags
+ module.hot.dispose(function() { update(); });
+}
+
+/***/ }),
+/* 297 */
+/***/ (function(module, exports, __webpack_require__) {
+
+exports = module.exports = __webpack_require__(22)(false);
+// imports
+
+
+// module
+exports.push([module.i, "\n.custom-chat-box[data-v-553cae42]{\n    min-height: 450px;\n}\n.list-unstyled[data-v-553cae42]{\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-553cae42]{\n    background-color: #df7166;\n    color: white;\n    border: none;\n}\n.btn-custom-primary[data-v-553cae42]:focus{\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\n\n\n", ""]);
+
+// exports
+
+
+/***/ }),
+/* 298 */
+/***/ (function(module, __webpack_exports__, __webpack_require__) {
+
+"use strict";
+Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__eventBus__ = __webpack_require__(32);
+/* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__ = __webpack_require__(82);
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+
+
+
+
+
+/* harmony default export */ __webpack_exports__["default"] = ({
+    name: "chatDisplayComponent",
+    props: ['username', "chatName", "messages", "room_id", "count_users", "online_users"],
+    components: {
+        'simplebar': __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
+    },
+    data: function data() {
+        return {
+            dataMessages: [],
+            message: ''
+        };
+    },
+    created: function created() {
+        var _this = this;
+
+        this.dataMessages = [];
+        this.messages.forEach(function (e) {
+            _this.dataMessages.push(e);
+        });
+        //Listen 'message-delivered' event
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
+            data.message = this.getCurrentDate(data.message);
+            this.dataMessages.push(data.message);
+        }.bind(this));
+    },
+    mounted: function mounted() {
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('show-mounted-chat-display', this);
+    },
+    updated: function updated() {
+        this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
+    },
+
+    methods: {
+        sendMessage: function sendMessage() {
+            var _this2 = this;
+
+            if (this.message != '') {
+                axios({
+                    method: 'get',
+                    url: '/looechat/send-message',
+                    params: { message: this.message, room_id: this.room_id }
+                }).then(function (response) {
+                    _this2.message = '';
+                });
+            }
+        },
+
+        //Sys
+        getCurrentDate: function getCurrentDate(message) {
+            var date = new Date(message.created_at);
+            var cur_date = date.getHours() + ':' + date.getMinutes();
+            message.date = cur_date;
+            return message;
+        },
+        scrollBottom: function scrollBottom() {
+            this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
+        }
+    },
+    destroyed: function destroyed() {}
+});
+
+/***/ }),
+/* 299 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
@@ -62344,30 +63381,30 @@ module.exports = { render: render, staticRenderFns: staticRenderFns }
 if (false) {
   module.hot.accept()
   if (module.hot.data) {
-    require("vue-hot-reload-api")      .rerender("data-v-54f2e038", module.exports)
+    require("vue-hot-reload-api")      .rerender("data-v-553cae42", module.exports)
   }
 }
 
 /***/ }),
-/* 275 */
+/* 300 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var disposed = false
 function injectStyle (ssrContext) {
   if (disposed) return
-  __webpack_require__(276)
+  __webpack_require__(301)
 }
-var normalizeComponent = __webpack_require__(31)
+var normalizeComponent = __webpack_require__(24)
 /* script */
-var __vue_script__ = __webpack_require__(278)
+var __vue_script__ = __webpack_require__(303)
 /* template */
-var __vue_template__ = __webpack_require__(283)
+var __vue_template__ = __webpack_require__(304)
 /* template functional */
 var __vue_template_functional__ = false
 /* styles */
 var __vue_styles__ = injectStyle
 /* scopeId */
-var __vue_scopeId__ = "data-v-2942bf34"
+var __vue_scopeId__ = "data-v-46b71005"
 /* moduleIdentifier (server only) */
 var __vue_module_identifier__ = null
 var Component = normalizeComponent(
@@ -62378,7 +63415,7 @@ var Component = normalizeComponent(
   __vue_scopeId__,
   __vue_module_identifier__
 )
-Component.options.__file = "resources/assets/js/components/elements/leftSideChatComponent.vue"
+Component.options.__file = "resources/assets/js/components/elements/chatPrivateDisplayComponent.vue"
 
 /* hot reload */
 if (false) {(function () {
@@ -62387,9 +63424,9 @@ if (false) {(function () {
   if (!hotAPI.compatible) return
   module.hot.accept()
   if (!module.hot.data) {
-    hotAPI.createRecord("data-v-2942bf34", Component.options)
+    hotAPI.createRecord("data-v-46b71005", Component.options)
   } else {
-    hotAPI.reload("data-v-2942bf34", Component.options)
+    hotAPI.reload("data-v-46b71005", Component.options)
   }
   module.hot.dispose(function (data) {
     disposed = true
@@ -62400,23 +63437,23 @@ module.exports = Component.exports
 
 
 /***/ }),
-/* 276 */
+/* 301 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // style-loader: Adds some css to the DOM by adding a <style> tag
 
 // load the styles
-var content = __webpack_require__(277);
+var content = __webpack_require__(302);
 if(typeof content === 'string') content = [[module.i, content, '']];
 if(content.locals) module.exports = content.locals;
 // add the styles to the DOM
-var update = __webpack_require__(30)("5032859e", content, false, {});
+var update = __webpack_require__(23)("2cf6d26b", content, false, {});
 // Hot Module Replacement
 if(false) {
  // When the styles change, update the <style> tags
  if(!content.locals) {
-   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-2942bf34\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./leftSideChatComponent.vue", function() {
-     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-2942bf34\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./leftSideChatComponent.vue");
+   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-46b71005\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./chatPrivateDisplayComponent.vue", function() {
+     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-46b71005\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./chatPrivateDisplayComponent.vue");
      if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
      update(newContent);
    });
@@ -62426,7 +63463,7 @@ if(false) {
 }
 
 /***/ }),
-/* 277 */
+/* 302 */
 /***/ (function(module, exports, __webpack_require__) {
 
 exports = module.exports = __webpack_require__(22)(false);
@@ -62434,13 +63471,13 @@ exports = module.exports = __webpack_require__(22)(false);
 
 
 // module
-exports.push([module.i, "\n.chat-leftsidebar[data-v-2942bf34]{\n    min-height: 655px;\n}\n", ""]);
+exports.push([module.i, "\n.custom-chat-box[data-v-46b71005]{\n    min-height: 450px;\n}\n.list-unstyled[data-v-46b71005]{\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-46b71005]{\n    background-color: #df7166;\n    color: white;\n    border: none;\n}\n.btn-custom-primary[data-v-46b71005]:focus{\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\n\n\n", ""]);
 
 // exports
 
 
 /***/ }),
-/* 278 */
+/* 303 */
 /***/ (function(module, __webpack_exports__, __webpack_require__) {
 
 "use strict";
@@ -62496,535 +63533,202 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
+
 
 
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
-    name: "leftSideChatComponent",
-    props: ['username'],
+    name: "chatPrivateDisplayComponent",
+    props: ['username', "chatName", "messages", "recipient_id"],
     components: {
-        simplebar: __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
+        'simplebar': __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
     },
     data: function data() {
         return {
-            chats: []
+            dataMessages: [],
+            message: ''
         };
     },
-    mounted: function mounted() {
+    created: function created() {
         var _this = this;
 
-        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('open-chat-display-set-class', function (room_id) {
-            this.chats.forEach(function (e) {
-                if (e.statusActive == true) {
-                    e.statusActive = false;
-                }
-                if (e.chat_room_id == room_id) {
-                    e.statusActive = true;
-                }
-            });
-        }.bind(this));
-        axios.get('/looechat/get-user-chats').then(function (response) {
-            response.data.forEach(function (e) {
-                e.statusActive = false;
-                _this.chats.push(e);
-            });
-
-            __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('join-chat-action', function (id) {
-                var _this2 = this;
-
-                axios.get('/looechat/join/' + id).then(function (response) {
-                    if (response.status == 200) {
-                        _this2.chats.push(response.data);
-                    }
-                }).catch(function (error) {
-                    if (error.response.status === 405) {
-                        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('error', error.response.data.error);
-                    } else if (error.response.status === 404) {
-                        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('error', error.response.data.error);
-                    }
-                });
-            }.bind(_this));
+        this.dataMessages = [];
+        this.messages.forEach(function (e) {
+            _this.dataMessages.push(e);
         });
+        //Listen 'message-delivered' event
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('message-delivered', function (data) {
+            data.message = this.getCurrentDate(data.message);
+            this.dataMessages.push(data.message);
+        }.bind(this));
+    },
+    mounted: function mounted() {
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('show-mounted-chat-display', this);
+    },
+    updated: function updated() {
+        this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
     },
 
     methods: {
-        openChatDisplay: function openChatDisplay(event) {
-            __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('open-chat-display', event.currentTarget.id);
+        sendMessage: function sendMessage() {
+            var _this2 = this;
+
+            if (this.message != '') {
+                axios({
+                    method: 'get',
+                    url: '/looechat/send-message',
+                    params: { message: this.message, room_id: this.room_id }
+                }).then(function (response) {
+                    _this2.message = '';
+                });
+            }
+        },
+
+        //Sys
+        getCurrentDate: function getCurrentDate(message) {
+            var date = new Date(message.created_at);
+            var cur_date = date.getHours() + ':' + date.getMinutes();
+            message.date = cur_date;
+            return message;
+        },
+        scrollBottom: function scrollBottom() {
+            this.$refs.simplebar.$refs.scrollElement.scrollTop = 90000;
         }
-    }
+    },
+    destroyed: function destroyed() {}
 });
 
 /***/ }),
-/* 279 */,
-/* 280 */,
-/* 281 */,
-/* 282 */,
-/* 283 */
+/* 304 */
 /***/ (function(module, exports, __webpack_require__) {
 
 var render = function() {
   var _vm = this
   var _h = _vm.$createElement
   var _c = _vm._self._c || _h
-  return _c("div", { staticClass: "chat-leftsidebar" }, [
-    _c("div", { staticClass: "p-3 border-bottom" }, [
-      _c("div", { staticClass: "media" }, [
-        _vm._m(0),
-        _vm._v(" "),
-        _c("div", { staticClass: "media-body" }, [
-          _c("h5", { staticClass: "font-size-15 mt-0 mb-1" }, [
-            _vm._v(
-              "\n                    " +
-                _vm._s(_vm.username) +
-                "\n                "
-            )
-          ]),
-          _vm._v(" "),
-          _vm._m(1)
-        ]),
-        _vm._v(" "),
-        _vm._m(2)
+  return _c("div", { staticClass: "w-100 user-chat mt-4 mt-sm-0" }, [
+    _c("div", { staticClass: "p-3 px-lg-4 user-chat-border" }, [
+      _c("div", { staticClass: "row" }, [
+        _c("div", { staticClass: "col-md-4 col-6" }, [
+          _c("h5", { staticClass: "font-size-15 mb-1 mt-1 text-truncate" }, [
+            _vm._v(_vm._s(_vm.chatName))
+          ])
+        ])
       ])
     ]),
     _vm._v(" "),
-    _c("div", { staticClass: "tab-content py-4" }, [
+    _c("div", { staticClass: "px-lg-2 custom-chat-box" }, [
       _c(
         "div",
-        { staticClass: "tab-pane show active", attrs: { id: "chat" } },
+        { staticClass: "chat-conversation p-3" },
         [
           _c(
-            "div",
-            [
-              _c("h5", { staticClass: "font-size-14 px-3 mb-3" }, [
-                _vm._v("Recent")
-              ]),
-              _vm._v(" "),
-              _vm.chats.length == 0
-                ? _c("p", { staticClass: "px-3 mb-3" }, [
-                    _vm._v(
-                      "\n                    You dont have chats 😔\n                "
-                    )
-                  ])
-                : _vm._e(),
-              _vm._v(" "),
-              _c(
-                "simplebar",
-                {
-                  staticClass: "list-unstyled chat-list",
-                  staticStyle: { "max-height": "475px" }
-                },
-                _vm._l(_vm.chats, function(chat) {
-                  return _c(
-                    "li",
-                    {
-                      class: { active: chat.statusActive },
-                      attrs: { id: chat.chatroom.id },
-                      on: {
-                        click: function($event) {
-                          $event.preventDefault()
-                          return _vm.openChatDisplay($event)
-                        }
-                      }
-                    },
-                    [
-                      _c("a", { attrs: { href: "" } }, [
-                        _c("div", { staticClass: "media" }, [
-                          _c(
-                            "div",
-                            {
-                              staticClass:
-                                "user-img online align-self-center mr-3"
-                            },
-                            [
-                              _c("img", {
-                                staticClass: "rounded-circle avatar-xs",
-                                attrs: {
-                                  src: "chat/images/users/avatar-2.jpg",
-                                  alt: ""
-                                }
-                              }),
-                              _vm._v(" "),
-                              _c("span", { staticClass: "user-status" })
-                            ]
-                          ),
-                          _vm._v(" "),
-                          _c(
-                            "div",
-                            { staticClass: "media-body overflow-hidden" },
-                            [
-                              _c(
-                                "h5",
-                                {
-                                  staticClass: "text-truncate font-size-14 mb-1"
-                                },
-                                [_vm._v(_vm._s(chat.chatroom.name))]
-                              ),
-                              _vm._v(" "),
-                              _c("p", { staticClass: "text-truncate mb-0" }, [
-                                _vm._v("Hey! there I'm available")
-                              ])
-                            ]
-                          ),
-                          _vm._v(" "),
-                          _c("div", { staticClass: "font-size-11" }, [
-                            _vm._v("xx min")
-                          ])
+            "simplebar",
+            {
+              ref: "simplebar",
+              staticClass: "list-unstyled mb-0 pr-3",
+              staticStyle: { "max-height": "475px" },
+              attrs: { "data-simplebar-auto-hide": "false" }
+            },
+            _vm._l(_vm.dataMessages, function(message) {
+              return _c(
+                "li",
+                { class: { right: message.user.username === _vm.username } },
+                [
+                  _c("div", { staticClass: "conversation-list" }, [
+                    _c("div", { staticClass: "ctext-wrap" }, [
+                      _c("div", { staticClass: "conversation-name" }, [
+                        _vm._v(_vm._s(message.user.username))
+                      ]),
+                      _vm._v(" "),
+                      _c("div", { staticClass: "ctext-wrap-content" }, [
+                        _c("p", { staticClass: "mb-0" }, [
+                          _vm._v(
+                            "\n                                    " +
+                              _vm._s(message.message) +
+                              "\n                                "
+                          )
                         ])
+                      ]),
+                      _vm._v(" "),
+                      _c("p", { staticClass: "chat-time mb-0" }, [
+                        _c("i", {
+                          staticClass: "bx bx-time-five align-middle mr-1"
+                        }),
+                        _vm._v(" " + _vm._s(message.date))
                       ])
-                    ]
-                  )
-                }),
-                0
+                    ])
+                  ])
+                ]
               )
-            ],
-            1
+            }),
+            0
           )
-        ]
+        ],
+        1
       )
-    ])
-  ])
-}
-var staticRenderFns = [
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "align-self-center mr-3" }, [
-      _c("img", {
-        staticClass: "avatar-xs rounded-circle",
-        attrs: { src: "chat/images/users/avatar-2.jpg", alt: "" }
-      })
-    ])
-  },
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("p", { staticClass: "text-muted mb-0" }, [
-      _c("i", { staticClass: "mdi mdi-circle text-success align-middle mr-1" }),
-      _vm._v(" В сети")
-    ])
-  },
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", [
-      _c("div", { staticClass: "dropdown chat-noti-dropdown" }, [
-        _c(
-          "button",
-          {
-            staticClass: "btn dropdown-toggle",
-            attrs: {
-              type: "button",
-              "data-toggle": "dropdown",
-              "aria-haspopup": "true",
-              "aria-expanded": "false"
-            }
-          },
-          [_c("i", { staticClass: "mdi mdi-dots-horizontal font-size-20" })]
-        ),
-        _vm._v(" "),
-        _c("div", { staticClass: "dropdown-menu dropdown-menu-right" }, [
-          _c("a", { staticClass: "dropdown-item", attrs: { href: "#" } }, [
-            _vm._v("Добавить пользователя")
+    ]),
+    _vm._v(" "),
+    _c("div", { staticClass: "px-lg-3" }, [
+      _c("div", { staticClass: "p-3 chat-input-section" }, [
+        _c("div", { staticClass: "row" }, [
+          _c("div", { staticClass: "col" }, [
+            _c("div", { staticClass: "position-relative" }, [
+              _c("input", {
+                directives: [
+                  {
+                    name: "model",
+                    rawName: "v-model",
+                    value: _vm.message,
+                    expression: "message"
+                  }
+                ],
+                staticClass: "form-control chat-input",
+                attrs: { type: "text", placeholder: "Enter Message..." },
+                domProps: { value: _vm.message },
+                on: {
+                  keydown: function($event) {
+                    if (
+                      !$event.type.indexOf("key") &&
+                      _vm._k($event.keyCode, "enter", 13, $event.key, "Enter")
+                    ) {
+                      return null
+                    }
+                    return _vm.sendMessage()
+                  },
+                  input: function($event) {
+                    if ($event.target.composing) {
+                      return
+                    }
+                    _vm.message = $event.target.value
+                  }
+                }
+              })
+            ])
+          ]),
+          _vm._v(" "),
+          _c("div", { staticClass: "col-auto" }, [
+            _c(
+              "button",
+              {
+                staticClass:
+                  "btn btn-custom-primary chat-send w-md waves-effect waves-light",
+                attrs: { type: "submit" },
+                on: { click: _vm.sendMessage }
+              },
+              [
+                _c("span", { staticClass: "d-none d-sm-inline-block mr-2" }, [
+                  _vm._v("Send")
+                ]),
+                _vm._v(" "),
+                _c("i", { staticClass: "mdi mdi-send" })
+              ]
+            )
           ])
         ])
       ])
     ])
-  }
-]
-render._withStripped = true
-module.exports = { render: render, staticRenderFns: staticRenderFns }
-if (false) {
-  module.hot.accept()
-  if (module.hot.data) {
-    require("vue-hot-reload-api")      .rerender("data-v-2942bf34", module.exports)
-  }
-}
-
-/***/ }),
-/* 284 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var disposed = false
-function injectStyle (ssrContext) {
-  if (disposed) return
-  __webpack_require__(285)
-}
-var normalizeComponent = __webpack_require__(31)
-/* script */
-var __vue_script__ = __webpack_require__(287)
-/* template */
-var __vue_template__ = __webpack_require__(288)
-/* template functional */
-var __vue_template_functional__ = false
-/* styles */
-var __vue_styles__ = injectStyle
-/* scopeId */
-var __vue_scopeId__ = "data-v-6f24699a"
-/* moduleIdentifier (server only) */
-var __vue_module_identifier__ = null
-var Component = normalizeComponent(
-  __vue_script__,
-  __vue_template__,
-  __vue_template_functional__,
-  __vue_styles__,
-  __vue_scopeId__,
-  __vue_module_identifier__
-)
-Component.options.__file = "resources/assets/js/components/elements/defaultChatDisplayComponent.vue"
-
-/* hot reload */
-if (false) {(function () {
-  var hotAPI = require("vue-hot-reload-api")
-  hotAPI.install(require("vue"), false)
-  if (!hotAPI.compatible) return
-  module.hot.accept()
-  if (!module.hot.data) {
-    hotAPI.createRecord("data-v-6f24699a", Component.options)
-  } else {
-    hotAPI.reload("data-v-6f24699a", Component.options)
-  }
-  module.hot.dispose(function (data) {
-    disposed = true
-  })
-})()}
-
-module.exports = Component.exports
-
-
-/***/ }),
-/* 285 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(286);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(30)("acee10f6", content, false, {});
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-6f24699a\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./defaultChatDisplayComponent.vue", function() {
-     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-6f24699a\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./defaultChatDisplayComponent.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 286 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(22)(false);
-// imports
-
-
-// module
-exports.push([module.i, "\n.default-display[data-v-6f24699a]{\n    min-height: 655px;\n    background-color: #fbfbfb;\n}\n\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 287 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-/* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__eventBus__ = __webpack_require__(32);
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-
-
-/* harmony default export */ __webpack_exports__["default"] = ({
-    name: "defaultChatDisplayComponent",
-    methods: {
-        joinAction: function joinAction(e) {
-            __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('join-chat-action', e.target.id);
-        }
-    }
-});
-
-/***/ }),
-/* 288 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var render = function() {
-  var _vm = this
-  var _h = _vm.$createElement
-  var _c = _vm._self._c || _h
-  return _c(
-    "div",
-    { staticClass: "w-100 user-chat mt-4 mt-sm-0 default-display" },
-    [
-      _c("div", { staticClass: "container-fluid h-100" }, [
-        _c(
-          "div",
-          {
-            staticClass: "row h-100 justify-content-center align-items-center"
-          },
-          [
-            _c("div", { staticClass: "col-12 text-center" }, [
-              _c("h2", [_vm._v("LooE chat")]),
-              _vm._v(" "),
-              _c("p", [_vm._v("Список рекомендуемы чатов")]),
-              _vm._v(" "),
-              _c("div", { staticClass: "row justify-content-center" }, [
-                _c("div", { staticClass: "col-12" }, [
-                  _c(
-                    "button",
-                    {
-                      staticClass: "btn btn-outline-primary",
-                      attrs: { id: "1", href: "" },
-                      on: {
-                        click: function($event) {
-                          $event.preventDefault()
-                          return _vm.joinAction($event)
-                        }
-                      }
-                    },
-                    [_vm._v("ALPHA TEST SERVER")]
-                  ),
-                  _vm._v(" "),
-                  _c(
-                    "button",
-                    {
-                      staticClass: "btn btn-outline-primary",
-                      attrs: { id: "2", href: "" },
-                      on: {
-                        click: function($event) {
-                          $event.preventDefault()
-                          return _vm.joinAction($event)
-                        }
-                      }
-                    },
-                    [_vm._v("ALPHA TEST SERVER2")]
-                  )
-                ])
-              ])
-            ])
-          ]
-        )
-      ])
-    ]
-  )
-}
-var staticRenderFns = []
-render._withStripped = true
-module.exports = { render: render, staticRenderFns: staticRenderFns }
-if (false) {
-  module.hot.accept()
-  if (module.hot.data) {
-    require("vue-hot-reload-api")      .rerender("data-v-6f24699a", module.exports)
-  }
-}
-
-/***/ }),
-/* 289 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var render = function() {
-  var _vm = this
-  var _h = _vm.$createElement
-  var _c = _vm._self._c || _h
-  return _c("div", { attrs: { id: "layout-wrapper" } }, [
-    _vm.error
-      ? _c("div", { staticClass: "alert alert-danger error-message" }, [
-          _vm._v("\n        " + _vm._s(_vm.error_message) + "\n    ")
-        ])
-      : _vm._e(),
-    _vm._v(" "),
-    _c("div", { staticClass: "main-content" }, [
-      _c("div", { staticClass: "page-content" }, [
-        _c("div", { staticClass: "container-fluid" }, [
-          _c(
-            "div",
-            { staticClass: "d-lg-flex mb-4" },
-            [
-              _c("left-side-chat-component", {
-                attrs: { username: _vm.username }
-              }),
-              _vm._v(" "),
-              _vm.room_id == 0 && _vm.room_id != -1
-                ? _c("default-chat-display-component")
-                : _vm._e(),
-              _vm._v(" "),
-              _vm.room_id != -1 && _vm.room_id != 0
-                ? _c("chat-display-component", {
-                    directives: [
-                      {
-                        name: "show",
-                        rawName: "v-show",
-                        value: _vm.openMountedChat,
-                        expression: "openMountedChat"
-                      }
-                    ],
-                    attrs: {
-                      chatName: _vm.chatName,
-                      messages: _vm.dataMessages,
-                      username: _vm.username,
-                      room_id: _vm.room_id,
-                      count_users: _vm.count_users,
-                      online_users: _vm.online_users
-                    }
-                  })
-                : _vm._e(),
-              _vm._v(" "),
-              _c("pre-loader-component", {
-                directives: [
-                  {
-                    name: "show",
-                    rawName: "v-show",
-                    value: _vm.preLoader,
-                    expression: "preLoader"
-                  }
-                ]
-              })
-            ],
-            1
-          )
-        ])
-      ])
-    ])
   ])
 }
 var staticRenderFns = []
@@ -63033,180 +63737,7 @@ module.exports = { render: render, staticRenderFns: staticRenderFns }
 if (false) {
   module.hot.accept()
   if (module.hot.data) {
-    require("vue-hot-reload-api")      .rerender("data-v-c303cd04", module.exports)
-  }
-}
-
-/***/ }),
-/* 290 */
-/***/ (function(module, exports) {
-
-// removed by extract-text-webpack-plugin
-
-/***/ }),
-/* 291 */,
-/* 292 */,
-/* 293 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var disposed = false
-function injectStyle (ssrContext) {
-  if (disposed) return
-  __webpack_require__(294)
-}
-var normalizeComponent = __webpack_require__(31)
-/* script */
-var __vue_script__ = __webpack_require__(296)
-/* template */
-var __vue_template__ = __webpack_require__(297)
-/* template functional */
-var __vue_template_functional__ = false
-/* styles */
-var __vue_styles__ = injectStyle
-/* scopeId */
-var __vue_scopeId__ = "data-v-5d8f9150"
-/* moduleIdentifier (server only) */
-var __vue_module_identifier__ = null
-var Component = normalizeComponent(
-  __vue_script__,
-  __vue_template__,
-  __vue_template_functional__,
-  __vue_styles__,
-  __vue_scopeId__,
-  __vue_module_identifier__
-)
-Component.options.__file = "resources/assets/js/components/elements/preLoaderComponent.vue"
-
-/* hot reload */
-if (false) {(function () {
-  var hotAPI = require("vue-hot-reload-api")
-  hotAPI.install(require("vue"), false)
-  if (!hotAPI.compatible) return
-  module.hot.accept()
-  if (!module.hot.data) {
-    hotAPI.createRecord("data-v-5d8f9150", Component.options)
-  } else {
-    hotAPI.reload("data-v-5d8f9150", Component.options)
-  }
-  module.hot.dispose(function (data) {
-    disposed = true
-  })
-})()}
-
-module.exports = Component.exports
-
-
-/***/ }),
-/* 294 */
-/***/ (function(module, exports, __webpack_require__) {
-
-// style-loader: Adds some css to the DOM by adding a <style> tag
-
-// load the styles
-var content = __webpack_require__(295);
-if(typeof content === 'string') content = [[module.i, content, '']];
-if(content.locals) module.exports = content.locals;
-// add the styles to the DOM
-var update = __webpack_require__(30)("87105444", content, false, {});
-// Hot Module Replacement
-if(false) {
- // When the styles change, update the <style> tags
- if(!content.locals) {
-   module.hot.accept("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-5d8f9150\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./preLoaderComponent.vue", function() {
-     var newContent = require("!!../../../../../node_modules/css-loader/index.js!../../../../../node_modules/vue-loader/lib/style-compiler/index.js?{\"vue\":true,\"id\":\"data-v-5d8f9150\",\"scoped\":true,\"hasInlineConfig\":true}!../../../../../node_modules/vue-loader/lib/selector.js?type=styles&index=0!./preLoaderComponent.vue");
-     if(typeof newContent === 'string') newContent = [[module.id, newContent, '']];
-     update(newContent);
-   });
- }
- // When the module is disposed, remove the <style> tags
- module.hot.dispose(function() { update(); });
-}
-
-/***/ }),
-/* 295 */
-/***/ (function(module, exports, __webpack_require__) {
-
-exports = module.exports = __webpack_require__(22)(false);
-// imports
-
-
-// module
-exports.push([module.i, "\n.spinner-border[data-v-5d8f9150]{\n    color: #df7166;\n}\n", ""]);
-
-// exports
-
-
-/***/ }),
-/* 296 */
-/***/ (function(module, __webpack_exports__, __webpack_require__) {
-
-"use strict";
-Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-//
-
-/* harmony default export */ __webpack_exports__["default"] = ({
-    name: "preLoaderComponent"
-});
-
-/***/ }),
-/* 297 */
-/***/ (function(module, exports, __webpack_require__) {
-
-var render = function() {
-  var _vm = this
-  var _h = _vm.$createElement
-  var _c = _vm._self._c || _h
-  return _vm._m(0)
-}
-var staticRenderFns = [
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c(
-      "div",
-      { staticClass: "w-100 user-chat mt-4 mt-sm-0 default-display" },
-      [
-        _c("div", { staticClass: "container-fluid h-100" }, [
-          _c(
-            "div",
-            {
-              staticClass: "row h-100 justify-content-center align-items-center"
-            },
-            [
-              _c("div", { staticClass: "col-12 text-center" }, [
-                _c(
-                  "div",
-                  { staticClass: "spinner-border", attrs: { role: "status" } },
-                  [_c("span", { staticClass: "visually-hidden" })]
-                )
-              ])
-            ]
-          )
-        ])
-      ]
-    )
-  }
-]
-render._withStripped = true
-module.exports = { render: render, staticRenderFns: staticRenderFns }
-if (false) {
-  module.hot.accept()
-  if (module.hot.data) {
-    require("vue-hot-reload-api")      .rerender("data-v-5d8f9150", module.exports)
+    require("vue-hot-reload-api")      .rerender("data-v-46b71005", module.exports)
   }
 }
 

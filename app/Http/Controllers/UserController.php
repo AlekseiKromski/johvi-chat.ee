@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\ChatPrivate;
+use App\ChatPrivateMessage;
 use App\ChatRoomHistory;
 use App\ChatRoomMember;
 use App\chatRoomMessages;
@@ -43,13 +45,40 @@ class UserController extends Controller
         return response()->json($chatRoom);
     }
 
-    public function getUserChats(){
+    public function getUserChatRooms(){
         $chats = ChatRoomMember::where('user_id', '=', Auth::id())->orderBy('id', 'desc')->get();
         foreach ($chats as $chat){
             $chat->user = $chat->user;
             $chat->chatroom = $chat->chatroom;
         }
         return response()->json($chats);
+    }
+
+    public function getUserChatPrivates(){
+        $chats = ChatPrivate::where('user_id', '=', Auth::id())
+            ->orderBy('id', 'desc')->get();
+        foreach ($chats as $chat){
+            $chat->sender = $chat->user;
+            $chat->recipient = $chat->recipient;
+        }
+        return response()->json($chats);
+    }
+
+    public function getPrivateMessages($id){
+        $messages = ChatPrivateMessage::where('chat_private_id','=',$id)->get();
+        $forbidden = false;
+        foreach ($messages as $message){
+            if($message->chat_private->user_id != Auth::id()){
+                $forbidden = true;
+            }
+        }
+        if(!$forbidden){
+            $messages = ChatPrivateMessage::where('chat_private_id','=',$id)->orderBy('id', 'desc')->get();
+            $message = $this->getUserWithMessagesWithRecipient($messages);
+            return response()->json($messages);
+        }else{
+            return abort(403);
+        }
     }
 
     public function joinUserIntoChat($id){
@@ -76,6 +105,17 @@ class UserController extends Controller
         $messages_reverse = [];
         foreach ($messages as $message) {
             $message->user = $message->user;
+            array_unshift($messages_reverse, $message);
+        }
+        return $messages_reverse;
+    }
+
+    //Sys functions
+    private function getUserWithMessagesWithRecipient($messages){
+        $messages_reverse = [];
+        foreach ($messages as $message) {
+            $message->user = $message->user;
+            $message->user_recipient = $message->chat_private->recipient;
             array_unshift($messages_reverse, $message);
         }
         return $messages_reverse;

@@ -15,18 +15,28 @@
                         <!-- Left side chat component -->
                         <left-side-chat-component v-bind:username="username"></left-side-chat-component>
 
-                        <default-chat-display-component v-if="room_id == 0 && room_id != -1"></default-chat-display-component>
+                        <default-chat-display-component v-if="room_id == 0 && room_id != -1 && private_id == 0 && private_id != -1"></default-chat-display-component>
                         <!-- Chat component -->
-                        <chat-display-component
+                        <chat-room-display-component
                             v-bind:chatName="chatName"
                             v-bind:messages="dataMessages"
                             v-bind:username="username"
                             v-bind:room_id="room_id"
                             v-bind:count_users="count_users"
-                            v-bind:online_users="online_users"
-                            v-if="room_id != -1 && room_id != 0"
+
+                            v-if="display_type == 'room' && room_id != -1 && room_id != 0"
                             v-show="openMountedChat"
-                        ></chat-display-component>
+                        ></chat-room-display-component>
+
+                        <chat-private-display-component
+                            v-bind:chatName="chatName"
+                            v-bind:messages="dataMessages"
+                            v-bind:username="username"
+                            v-bind:private_id="private_id"
+
+                            v-if="display_type == 'private' && private_id != -1 && private_id != 0"
+                            v-show="openMountedChat"
+                        ></chat-private-display-component>
 
                         <pre-loader-component v-show="preLoader"></pre-loader-component>
 
@@ -42,37 +52,46 @@
 </template>
 
 <script>
-import chatDisplayComponent from "./elements/chatDisplayComponent";
+import chatRoomDisplayComponent from "./elements/chatRoomDisplayComponent";
 import leftSideChatComponent from "./elements/leftSideChatComponent";
 import defaultChatDisplayComponent from "./elements/defaultChatDisplayComponent";
 import preLoaderComponent from "./elements/preLoaderComponent";
+import chatPrivateDisplayComponent from "./elements/chatPrivateDisplayComponent";
 import EventBus from "../eventBus";
 export default {
     name: "chatComponent",
     props: ['username'],
     components: {
-        'chat-display-component': chatDisplayComponent,
+        'chat-room-display-component': chatRoomDisplayComponent,
         'left-side-chat-component': leftSideChatComponent,
         'default-chat-display-component': defaultChatDisplayComponent,
-        'pre-loader-component' : preLoaderComponent
+        'pre-loader-component' : preLoaderComponent,
+        'chat-private-display-component' : chatPrivateDisplayComponent,
+
     },
     data: function (){
         return {
-            room_id: 0,
             error: false,
             error_message : '',
+            display_type: null,
+
+            //Rooms
+            room_id: 0,
             chatName: '',
             count_users: '',
             dataMessages: [],
             preLoader: false,
             openMountedChat: false,
-            online_users: null,
+
+            //Private
+            private_id: 0,
 
         }
     },
     mounted() {
         EventBus.$on('error', message => {this.showError(message)});
-        EventBus.$on('open-chat-display', room_id => {this.openChatDisplay(room_id)});
+        EventBus.$on('open-chat-room-display', room_id => {this.openChatRoomDisplay(room_id)});
+        EventBus.$on('open-chat-private-display', private_id => {this.openChatPrivateDisplay(private_id)});
         let socket = io.connect('http://178.248.138.70:3000', {transports: ['websocket', 'polling', 'flashsocket']});
         socket.on("message-room:App\\Events\\NewMessage", function (data){
             if(this.room_id == Number.parseInt(data.message.chat_room_id)){
@@ -92,8 +111,10 @@ export default {
                 this.error_message = '';
             }.bind(this), 3500)
         },
-        openChatDisplay: function (room_id){
+        openChatRoomDisplay: function (room_id){
+            this.private_id = 0;
             if(room_id != this.room_id){
+                this.display_type = 'room';
                 this.room_id = -1;
                 this.preLoader = true;
                 this.openMountedChat = false;
@@ -101,10 +122,9 @@ export default {
                 axios.get('/looechat/get-chat-info/' + room_id).then(response =>{
                     this.chatName = response.data.name;
                     this.count_users = response.data.users_count;
-                    this.online_users = response.data.online_users;
                     axios.get('/looechat/get-messages/' + room_id).then(response => {
                         response.data.forEach(e => {
-                            e = chatDisplayComponent.methods.getCurrentDate(e);
+                            e = chatRoomDisplayComponent.methods.getCurrentDate(e);
                             this.dataMessages.push(e);
                         });
                         this.room_id = room_id;
@@ -120,6 +140,35 @@ export default {
                             EventBus.$emit('open-chat-display-set-class', this.room_id);
                         }.bind(this));
                     });
+                });
+            }
+        },
+        openChatPrivateDisplay: function (private_id){
+            this.room_id = 0;
+            if(private_id != this.private_id){
+                this.display_type = 'private';
+                this.private_id = -1;
+                this.preLoader = true;
+                this.openMountedChat = false;
+                this.dataMessages = [];
+                axios.get('/looechat/get-private-messages/' + private_id).then(response => {
+                    this.chatName = response.data[0].user_recipient.username;
+                    response.data.forEach(e => {
+                        e = chatPrivateDisplayComponent.methods.getCurrentDate(e);
+                        this.dataMessages.push(e);
+                    });
+                    this.private_id = private_id;
+                    EventBus.$on('show-mounted-chat-display', function (this_) {
+                        setTimeout(function (){
+                            this.preLoader = false;
+                            setTimeout(function (){
+                                this_.scrollBottom();
+                            }, 0);
+                            this.openMountedChat = true;
+                        }.bind(this), 1000)
+
+                        EventBus.$emit('open-chat-display-set-class', this.private_id);
+                    }.bind(this));
                 });
             }
         }
