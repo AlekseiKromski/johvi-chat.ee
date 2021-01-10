@@ -8,5 +8,5 @@
  - Высокая скорость работы
  - Возможность предлагать свои идеи авторам приложения
 
-![N|Solid](https://github.com/AlekseiKromski/looe-chat/tree/ak_dev/public/images/rdm.png)
+![N|Solid](/AlekseiKromski/looe-chat/blob/master/public/images/rdm.png?raw=true)
 
