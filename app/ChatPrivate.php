@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ChatPrivate extends Model
 {
+    use SoftDeletes;
     public $table = 'chat_privates';
     public $timestamps = true;
     public $guarded = [];

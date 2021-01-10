@@ -84,7 +84,7 @@ class UserController extends Controller
     }
 
     public function getPrivateMessages($channel){
-        $messages = ChatPrivate::where('chat_private_id','=',$id)->;
+        //$messages = ChatPrivate::where('chat_private_id','=',$id)->;
         if(count($messages) != 0){
             if($messages[0]->chat_private->user_id == Auth::id() || $messages[0]->chat_private->user_id == Auth::id()){
                 $messages = ChatPrivateMessage::where('chat_private_id','=',$id)->get();
