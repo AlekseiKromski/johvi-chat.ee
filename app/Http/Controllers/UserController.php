@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\ChatPrivate;
+use App\User;
+use App\ChatPrivateChannel;
 use App\ChatPrivateMessage;
 use App\ChatRoomHistory;
 use App\ChatRoomMember;
@@ -100,10 +102,10 @@ class UserController extends Controller
 
     public function joinUserIntoChat($id){
         if (count(ChatRoomMember::where('user_id', '=', Auth::id())->where('chat_room_id', '=', $id)->get()) != 0){
-            return response()->json(['error' => 'вы уже находитесь в чате'], 405);
+            return response()->json(['error' => 'Вы уже находитесь в чате'], 405);
         }
         if(ChatRooms::find($id) == null){
-            return response()->json(['error' => 'чата не существует'], 404);
+            return response()->json(['error' => 'Чата не существует'], 404);
         }
         if(!$chat = ChatRoomMember::create([
             'user_id' => Auth::id(),
@@ -115,6 +117,30 @@ class UserController extends Controller
         $chat->user = $chat->user;
         $chat->chatroom = $chat->chatroom;
         return response()->json($chat);
+    }
+
+    public function addUser($id){
+        if($user = User::find($id)){
+            if(count(ChatPrivate::where('user_2', '=', $id)->where('user_id', '=', Auth::id())->get()) == 0){
+                $channel = ChatPrivateChannel::create([
+                    'name' => Auth::user()->login . '_' . $user->login
+                ]);
+                ChatPrivate::create([
+                    'user_id' => Auth::id(),
+                    'user_2' => $user->id,
+                    'channel_id' => $channel->id
+                ]);
+                ChatPrivate::create([
+                    'user_id' => $user->id,
+                    'user_2' => Auth::id(),
+                    'channel_id' => $channel->id
+                ]);
+            }else{
+                return response()->json(['error' => 'У вас уже есть чат с данным человеком'], 403);
+            }
+        }else{
+            return response()->json(['error' => 'К сожалению данного пользователя не существует'], 404);
+        }
     }
 
     //Sys functions

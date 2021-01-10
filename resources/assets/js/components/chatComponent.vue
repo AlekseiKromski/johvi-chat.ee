@@ -13,7 +13,11 @@
                 <div class="container-fluid">
                     <div class="d-lg-flex mb-4">
                         <!-- Left side chat component -->
-                        <left-side-chat-component v-bind:socket="socket" v-bind:username="username"></left-side-chat-component>
+                        <left-side-chat-component
+                            v-bind:socket="socket"
+                            v-bind:username="username"
+                            v-bind:user_id="user_id"
+                        ></left-side-chat-component>
 
                         <default-chat-display-component v-if="room_id == 0 && room_id != -1 && channel == 0 && channel != -1"></default-chat-display-component>
                         <!-- Chat component -->
@@ -61,7 +65,7 @@ import chatPrivateDisplayComponent from "./elements/chatPrivateDisplayComponent"
 import EventBus from "../eventBus";
 export default {
     name: "chatComponent",
-    props: ['username', 'userid'],
+    props: ['username', 'user_id'],
     components: {
         'chat-room-display-component': chatRoomDisplayComponent,
         'left-side-chat-component': leftSideChatComponent,

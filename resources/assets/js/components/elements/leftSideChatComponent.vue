@@ -10,6 +10,10 @@
                     <h5 class="font-size-15 mt-0 mb-1">
                         {{username}}
                     </h5>
+                    <h6 class="font-size-12 mt-0 mb-1">
+                        ID:#{{user_id}}
+                    </h6>
+
                     <p class="text-muted mb-0"><i class="mdi mdi-circle text-success align-middle mr-1"></i> В сети</p>
                 </div>
 
@@ -19,9 +23,19 @@
                             <i class="mdi mdi-dots-horizontal font-size-20"></i>
                         </button>
                         <div class="dropdown-menu dropdown-menu-right">
-                            <a class="dropdown-item" href="#">Добавить пользователя</a>
+                            <a class="dropdown-item" href="#" @click.prevent="showAddUser = !showAddUser">Добавить пользователя</a>
+                            <a class="dropdown-item" href="/looechat/logout">Выйти</a>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-3 border-bottom" v-if="showAddUser">
+            <div class="input-group mb-3">
+                <input type="text" class="form-control" placeholder="#xxxx" aria-label="#xxxx" v-model="search_id_user" aria-describedby="button-addon2">
+                <div class="input-group-append">
+                    <button class="btn btn-secondary" type="button" id="button-addon2" @click.prevent="addUser()">Добавить</button>
                 </div>
             </div>
         </div>
@@ -84,7 +98,7 @@ import EventBus from "../../eventBus";
 import simplebar from 'simplebar-vue';
 export default {
     name: "leftSideChatComponent",
-    props: ['username', 'socket'],
+    props: ['username', 'socket', 'user_id'],
     components: {
         simplebar
     },
@@ -92,6 +106,10 @@ export default {
         return {
             chats_rooms: [],
             chats_privates: [],
+
+            //Add user
+            showAddUser: false,
+            search_id_user: null
         }
     },
     mounted(){
@@ -152,6 +170,17 @@ export default {
                     'channel' : event.currentTarget.id,
                     'chat' : chat
                 });
+        },
+        addUser: function(){
+            this.search_id_user = this.search_id_user.replace('#','');
+            axios.get('looechat/add-user/' + this.search_id_user).then(response => {
+                this.search_id_user = '';
+                this.showAddUser = false;
+            }).catch(error => {
+                EventBus.$emit('error', error.response.data.error);
+                this.search_id_user = '';
+                this.showAddUser = false;
+            });
         }
     }
 }
