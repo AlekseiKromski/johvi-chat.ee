@@ -56455,23 +56455,29 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 this.openMountedChat = false;
                 this.dataMessages = [];
                 axios.get('/looechat/get-private-messages/' + private_id).then(function (response) {
-                    _this3.chatName = response.data[0].user_recipient.username;
-                    response.data.forEach(function (e) {
-                        e = __WEBPACK_IMPORTED_MODULE_4__elements_chatPrivateDisplayComponent___default.a.methods.getCurrentDate(e);
-                        _this3.dataMessages.push(e);
-                    });
-                    _this3.private_id = private_id;
-                    __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('show-mounted-chat-display', function (this_) {
-                        setTimeout(function () {
-                            this.preLoader = false;
+                    if (response.data.length != 0) {
+                        _this3.chatName = response.data[0].user_recipient.username;
+                        response.data.forEach(function (e) {
+                            e = __WEBPACK_IMPORTED_MODULE_4__elements_chatPrivateDisplayComponent___default.a.methods.getCurrentDate(e);
+                            _this3.dataMessages.push(e);
+                        });
+                        _this3.private_id = private_id;
+                        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('show-mounted-chat-display', function (this_) {
                             setTimeout(function () {
-                                this_.scrollBottom();
-                            }, 0);
-                            this.openMountedChat = true;
-                        }.bind(this), 1000);
+                                this.preLoader = false;
+                                setTimeout(function () {
+                                    this_.scrollBottom();
+                                }, 0);
+                                this.openMountedChat = true;
+                            }.bind(this), 1000);
 
-                        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('open-chat-display-set-class', this.private_id);
-                    }.bind(_this3));
+                            __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('open-chat-display-set-class', this.private_id);
+                        }.bind(_this3));
+                    } else {
+                        _this3.private_id = 0;
+                        _this3.preLoader = false;
+                        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('error', 'No messages');
+                    }
                 });
             }
         }

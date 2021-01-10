@@ -152,23 +152,29 @@ export default {
                 this.openMountedChat = false;
                 this.dataMessages = [];
                 axios.get('/looechat/get-private-messages/' + private_id).then(response => {
-                    this.chatName = response.data[0].user_recipient.username;
-                    response.data.forEach(e => {
-                        e = chatPrivateDisplayComponent.methods.getCurrentDate(e);
-                        this.dataMessages.push(e);
-                    });
-                    this.private_id = private_id;
-                    EventBus.$on('show-mounted-chat-display', function (this_) {
-                        setTimeout(function (){
-                            this.preLoader = false;
+                    if(response.data.length != 0){
+                        this.chatName = response.data[0].user_recipient.username;
+                        response.data.forEach(e => {
+                            e = chatPrivateDisplayComponent.methods.getCurrentDate(e);
+                            this.dataMessages.push(e);
+                        });
+                        this.private_id = private_id;
+                        EventBus.$on('show-mounted-chat-display', function (this_) {
                             setTimeout(function (){
-                                this_.scrollBottom();
-                            }, 0);
-                            this.openMountedChat = true;
-                        }.bind(this), 1000)
+                                this.preLoader = false;
+                                setTimeout(function (){
+                                    this_.scrollBottom();
+                                }, 0);
+                                this.openMountedChat = true;
+                            }.bind(this), 1000)
 
-                        EventBus.$emit('open-chat-display-set-class', this.private_id);
-                    }.bind(this));
+                            EventBus.$emit('open-chat-display-set-class', this.private_id);
+                        }.bind(this));
+                    }else{
+                        this.private_id = 0;
+                        this.preLoader = false;
+                        EventBus.$emit('error', 'No messages');
+                    }
                 });
             }
         }
