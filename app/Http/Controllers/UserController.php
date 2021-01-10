@@ -34,21 +34,18 @@ class UserController extends Controller
     }
 
     public function sendPrivateMessage(Request $request){
-        if(Auth::id() != $request->user_id){
-            return abort(403);
-        }
         if(!$message = ChatPrivateMessage::create([
-            'chat_private_id' => $request->private_id,
+            'channel_id' => $request->channel_id,
             'user_id' => Auth::user()->id,
-            'user_id' => Auth::user()->id,
+            'user_2' => $request->user_recipient,
             'message' => $request->message,
         ])){
             //Will return json for display error
             return abort(404);
         }
         $message->user = $message->user;
-        $message->user_recipient = $message->chat_private->recipient;
-        event(new PrivateNewMessage($message, $message->chat_private->id));
+        $message->user_recipient = $message->user_recipient;
+        event(new PrivateNewMessage($message, $message->channel_id));
     }
 
     public function getMessages($id)

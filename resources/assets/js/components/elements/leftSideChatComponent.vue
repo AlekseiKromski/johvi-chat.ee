@@ -117,7 +117,7 @@ export default {
             response.data.forEach(e => {
                 e.statusActive = false;
                 this.chats_privates.push(e);
-                this.socket.on("private-message."+ e.chat_id +":App\\Events\\PrivateNewMessage", function (data){
+                this.socket.on("private-message."+ e.channel_id +":App\\Events\\PrivateNewMessage", function (data){
                     EventBus.$emit('message-private-delivered', data);
                 }.bind(this));
             });

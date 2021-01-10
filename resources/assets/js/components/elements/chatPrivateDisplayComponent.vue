@@ -54,7 +54,7 @@ import EventBus from "../../eventBus";
 import simplebar from 'simplebar-vue';
 export default {
     name: "chatPrivateDisplayComponent",
-    props: ['username', "chatName", "messages", "user_id", "private_id"],
+    props: ['username', "chatName", "messages", "user_recipient", "channel_id"],
     components: {
         'simplebar' : simplebar,
     },
@@ -87,7 +87,7 @@ export default {
                 axios({
                     method: 'get',
                     url: '/looechat/send-private-message',
-                    params: {message: this.message, user_id: this.user_id, private_id: this.private_id}
+                    params: {message: this.message, channel_id : this.channel_id, user_recipient: this.user_recipient}
                 }).then((response) => {
                     this.message = '';
                 })

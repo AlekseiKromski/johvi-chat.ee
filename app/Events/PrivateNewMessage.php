@@ -15,7 +15,7 @@ class PrivateNewMessage implements ShouldBroadcast
     use Dispatchable, InteractsWithSockets, SerializesModels;
 
     public $message;
-    public $recipient_id;
+    public $channel_id;
 
     /**
      * Create a new event instance.
@@ -24,10 +24,10 @@ class PrivateNewMessage implements ShouldBroadcast
      */
 
 
-    public function __construct($message, $recipient_id)
+    public function __construct($message, $channel_id)
     {
         $this->message = $message;
-        $this->recipient_id = $recipient_id;
+        $this->channel_id = $channel_id;
     }
 
     /**
@@ -37,6 +37,6 @@ class PrivateNewMessage implements ShouldBroadcast
      */
     public function broadcastOn()
     {
-        return ['private-message.' . $this->recipient_id];
+        return ['private-message.' . $this->channel_id];
     }
 }

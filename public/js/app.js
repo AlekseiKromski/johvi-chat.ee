@@ -56379,7 +56379,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             openMountedChat: false,
 
             //Private
-            channel: 0
+            channel: 0,
+            user_recipient: null
 
         };
     },
@@ -56459,6 +56460,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 this.dataMessages = [];
                 axios.get('/looechat/get-private-messages/' + chat.channel).then(function (response) {
                     _this3.chatName = chat.chat.recipient.username;
+                    _this3.user_recipient = chat.chat.recipient.id;
                     response.data.forEach(function (e) {
                         e = __WEBPACK_IMPORTED_MODULE_4__elements_chatPrivateDisplayComponent___default.a.methods.getCurrentDate(e);
                         _this3.dataMessages.push(e);
@@ -62251,7 +62253,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             response.data.forEach(function (e) {
                 e.statusActive = false;
                 _this.chats_privates.push(e);
-                _this.socket.on("private-message." + e.chat_id + ":App\\Events\\PrivateNewMessage", function (data) {
+                _this.socket.on("private-message." + e.channel_id + ":App\\Events\\PrivateNewMessage", function (data) {
                     __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('message-private-delivered', data);
                 }.bind(_this));
             });
@@ -62979,8 +62981,8 @@ var render = function() {
                       chatName: _vm.chatName,
                       messages: _vm.dataMessages,
                       username: _vm.username,
-                      channel: _vm.channel,
-                      user_id: _vm.userid
+                      channel_id: _vm.channel,
+                      user_recipient: _vm.user_recipient
                     }
                   })
                 : _vm._e(),
@@ -63557,7 +63559,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
 /* harmony default export */ __webpack_exports__["default"] = ({
     name: "chatPrivateDisplayComponent",
-    props: ['username', "chatName", "messages", "user_id", "private_id"],
+    props: ['username', "chatName", "messages", "user_recipient", "channel_id"],
     components: {
         'simplebar': __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__["a" /* default */]
     },
@@ -63595,7 +63597,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 axios({
                     method: 'get',
                     url: '/looechat/send-private-message',
-                    params: { message: this.message, user_id: this.user_id, private_id: this.private_id }
+                    params: { message: this.message, channel_id: this.channel_id, user_recipient: this.user_recipient }
                 }).then(function (response) {
                     _this2.message = '';
                 });

@@ -32,8 +32,8 @@
                             v-bind:chatName="chatName"
                             v-bind:messages="dataMessages"
                             v-bind:username="username"
-                            v-bind:channel="channel"
-                            v-bind:user_id="userid"
+                            v-bind:channel_id="channel"
+                            v-bind:user_recipient="user_recipient"
 
                             v-if="display_type == 'private' && channel != -1 && channel != 0"
                             v-show="openMountedChat"
@@ -88,6 +88,7 @@ export default {
 
             //Private
             channel: 0,
+            user_recipient: null
 
         }
     },
@@ -156,6 +157,7 @@ export default {
                 this.dataMessages = [];
                 axios.get('/looechat/get-private-messages/' + chat.channel).then(response => {
                     this.chatName = chat.chat.recipient.username;
+                    this.user_recipient = chat.chat.recipient.id;
                     response.data.forEach(e => {
                         e = chatPrivateDisplayComponent.methods.getCurrentDate(e);
                         this.dataMessages.push(e);
