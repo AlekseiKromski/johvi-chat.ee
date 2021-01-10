@@ -62773,7 +62773,7 @@ var render = function() {
     _vm._v(" "),
     _vm.showAddUser
       ? _c("div", { staticClass: "p-3 border-bottom" }, [
-          _c("div", { staticClass: "input-group mb-3" }, [
+          _c("div", { staticClass: "input-group" }, [
             _c("input", {
               directives: [
                 {

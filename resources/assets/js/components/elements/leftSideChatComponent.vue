@@ -32,7 +32,7 @@
         </div>
 
         <div class="p-3 border-bottom" v-if="showAddUser">
-            <div class="input-group mb-3">
+            <div class="input-group">
                 <input type="text" class="form-control" placeholder="#xxxx" aria-label="#xxxx" v-model="search_id_user" aria-describedby="button-addon2">
                 <div class="input-group-append">
                     <button class="btn btn-secondary" type="button" id="button-addon2" @click.prevent="addUser()">Добавить</button>
