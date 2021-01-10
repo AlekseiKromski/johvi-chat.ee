@@ -24,6 +24,6 @@ class ChatPrivateMessage extends Model
     }
 
     public function user_recipient(){
-        return $this->hasOne('App\User', 'id', 'chat_private_id');
+        return $this->hasOne('App\User', 'id', 'user_2');
     }
 }

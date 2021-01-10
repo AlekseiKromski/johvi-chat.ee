@@ -56379,7 +56379,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             openMountedChat: false,
 
             //Private
-            private_id: 0
+            channel: 0
 
         };
     },
@@ -56392,8 +56392,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('open-chat-room-display', function (room_id) {
             _this.openChatRoomDisplay(room_id);
         });
-        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('open-chat-private-display', function (private_id) {
-            _this.openChatPrivateDisplay(private_id);
+        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('open-chat-private-display', function (channel) {
+            _this.openChatPrivateDisplay(channel);
         });
         this.socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
         this.socket.on("message-room:App\\Events\\NewMessage", function (data) {
@@ -56416,7 +56416,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         openChatRoomDisplay: function openChatRoomDisplay(room_id) {
             var _this2 = this;
 
-            this.private_id = 0;
+            this.channel = 0;
             if (room_id != this.room_id) {
                 this.display_type = 'room';
                 this.room_id = -1;
@@ -56447,40 +56447,34 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 });
             }
         },
-        openChatPrivateDisplay: function openChatPrivateDisplay(private_id) {
+        openChatPrivateDisplay: function openChatPrivateDisplay(chat) {
             var _this3 = this;
 
             this.room_id = 0;
-            if (private_id != this.private_id) {
+            if (chat.channel != this.channel) {
                 this.display_type = 'private';
-                this.private_id = -1;
+                this.channel = -1;
                 this.preLoader = true;
                 this.openMountedChat = false;
                 this.dataMessages = [];
-                axios.get('/looechat/get-private-messages/' + private_id).then(function (response) {
-                    if (response.data.length != 0) {
-                        _this3.chatName = response.data[0].user_recipient.username;
-                        response.data.forEach(function (e) {
-                            e = __WEBPACK_IMPORTED_MODULE_4__elements_chatPrivateDisplayComponent___default.a.methods.getCurrentDate(e);
-                            _this3.dataMessages.push(e);
-                        });
-                        _this3.private_id = private_id;
-                        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('show-mounted-chat-display', function (this_) {
+                axios.get('/looechat/get-private-messages/' + chat.channel).then(function (response) {
+                    _this3.chatName = chat.chat.recipient.username;
+                    response.data.forEach(function (e) {
+                        e = __WEBPACK_IMPORTED_MODULE_4__elements_chatPrivateDisplayComponent___default.a.methods.getCurrentDate(e);
+                        _this3.dataMessages.push(e);
+                    });
+                    _this3.channel = chat.channel;
+                    __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$on('show-mounted-chat-display', function (this_) {
+                        setTimeout(function () {
+                            this.preLoader = false;
                             setTimeout(function () {
-                                this.preLoader = false;
-                                setTimeout(function () {
-                                    this_.scrollBottom();
-                                }, 0);
-                                this.openMountedChat = true;
-                            }.bind(this), 1000);
+                                this_.scrollBottom();
+                            }, 0);
+                            this.openMountedChat = true;
+                        }.bind(this), 1000);
 
-                            __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('open-chat-display-set-class', this.private_id);
-                        }.bind(_this3));
-                    } else {
-                        _this3.private_id = 0;
-                        _this3.preLoader = false;
-                        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('error', 'No messages');
-                    }
+                        __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('open-chat-display-set-class', this.channel);
+                    }.bind(_this3));
                 });
             }
         }
@@ -62284,7 +62278,16 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('open-chat-room-display', event.currentTarget.id);
         },
         openChatPrivateDisplay: function openChatPrivateDisplay(event) {
-            __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('open-chat-private-display', event.currentTarget.id);
+            var chat = void 0;
+            this.chats_privates.forEach(function (e) {
+                if (e.channel_id == event.currentTarget.id) {
+                    chat = e;
+                }
+            });
+            __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('open-chat-private-display', {
+                'channel': event.currentTarget.id,
+                'chat': chat
+            });
         }
     }
 });
@@ -62411,7 +62414,7 @@ var render = function() {
                     return _c(
                       "li",
                       {
-                        attrs: { id: chat.chat_id },
+                        attrs: { id: chat.channel_id },
                         on: {
                           click: function($event) {
                             $event.preventDefault()
@@ -62933,8 +62936,8 @@ var render = function() {
               _vm._v(" "),
               _vm.room_id == 0 &&
               _vm.room_id != -1 &&
-              _vm.private_id == 0 &&
-              _vm.private_id != -1
+              _vm.channel == 0 &&
+              _vm.channel != -1
                 ? _c("default-chat-display-component")
                 : _vm._e(),
               _vm._v(" "),
@@ -62961,8 +62964,8 @@ var render = function() {
                 : _vm._e(),
               _vm._v(" "),
               _vm.display_type == "private" &&
-              _vm.private_id != -1 &&
-              _vm.private_id != 0
+              _vm.channel != -1 &&
+              _vm.channel != 0
                 ? _c("chat-private-display-component", {
                     directives: [
                       {
@@ -62976,7 +62979,7 @@ var render = function() {
                       chatName: _vm.chatName,
                       messages: _vm.dataMessages,
                       username: _vm.username,
-                      private_id: _vm.private_id,
+                      channel: _vm.channel,
                       user_id: _vm.userid
                     }
                   })

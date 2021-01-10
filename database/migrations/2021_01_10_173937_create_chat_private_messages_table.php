@@ -17,11 +17,13 @@ class CreateChatPrivateMessagesTable extends Migration
             $table->increments('id');
             $table->unsignedInteger('channel_id');
             $table->unsignedInteger('user_id');
+            $table->unsignedInteger('user_2');
             $table->longText('message');
             $table->timestamps();
             $table->softDeletes();
             $table->foreign('channel_id')->references('id')->on('chat_private_channels');
             $table->foreign('user_id')->references('id')->on('users');
+            $table->foreign('user_2')->references('id')->on('users');
         });
     }
 

@@ -84,15 +84,18 @@ class UserController extends Controller
     }
 
     public function getPrivateMessages($channel){
-        //$messages = ChatPrivate::where('chat_private_id','=',$id)->;
-        if(count($messages) != 0){
-            if($messages[0]->chat_private->user_id == Auth::id() || $messages[0]->chat_private->user_id == Auth::id()){
-                $messages = ChatPrivateMessage::where('chat_private_id','=',$id)->get();
-                $message = $this->getUserWithMessagesWithRecipient($messages);
-                return response()->json($messages);
-            }else{
-                return abort(403);
+        $chats = ChatPrivate::where('channel_id', '=', $channel)->get();
+        $forbidden = true;
+        foreach ($chats as $chat){
+
+            if($chat->user->id == Auth::id() || $chat->recipient->id == Auth::id()){
+                $forbidden = false;
             }
+        }
+        if(!$forbidden){
+            $messages = ChatPrivateMessage::where('channel_id','=',$channel)->get();
+            $message = $this->getUserWithMessagesWithRecipient($messages);
+            return response()->json($messages);
         }else{
             return abort(403);
         }
@@ -131,7 +134,7 @@ class UserController extends Controller
     private function getUserWithMessagesWithRecipient($messages){
         foreach ($messages as $message) {
             $message->user = $message->user;
-            $message->user_recipient = $message->chat_private->recipient;
+            $message->user_recipient = $message->user_recipient;
         }
         return $messages;
     }

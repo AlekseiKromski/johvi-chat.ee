@@ -54,7 +54,7 @@
                             </a>
                         </li>
 
-                        <li v-for="chat in chats_privates" v-bind:id="chat.chat_id" v-on:click.prevent="openChatPrivateDisplay($event)">
+                        <li v-for="chat in chats_privates" v-bind:id="chat.channel_id" v-on:click.prevent="openChatPrivateDisplay($event)">
                             <a href="">
                                 <div class="media">
 
@@ -141,7 +141,17 @@ export default {
             EventBus.$emit('open-chat-room-display', event.currentTarget.id);
         },
         openChatPrivateDisplay: function (event){
-            EventBus.$emit('open-chat-private-display', event.currentTarget.id);
+            let chat;
+            this.chats_privates.forEach(e => {
+                if(e.channel_id == event.currentTarget.id){
+                    chat = e;
+                }
+            })
+            EventBus.$emit('open-chat-private-display',
+                {
+                    'channel' : event.currentTarget.id,
+                    'chat' : chat
+                });
         }
     }
 }

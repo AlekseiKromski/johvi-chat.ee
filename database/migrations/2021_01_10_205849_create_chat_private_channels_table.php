@@ -15,12 +15,8 @@ class CreateChatPrivateChannelsTable extends Migration
     {
         Schema::create('chat_private_channels', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('chat_private_one');
-            $table->unsignedInteger('chat_private_two');
+            $table->string('name');
             $table->timestamps();
-
-            $table->foreign('chat_private_one')->references('id')->on('chat_privates');
-            $table->foreign('chat_private_two')->references('id')->on('chat_privates');
         });
     }
 
