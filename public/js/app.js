@@ -62249,20 +62249,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 e.statusActive = false;
                 _this.chats_rooms.push(e);
             });
-
-            /*EventBus.$on('join-chat-action', function (id){
-                axios.get('/looechat/join/' + id).then(response => {
-                    if(response.status == 200){
-                        this.chats.push(response.data);
-                    }
-                }).catch(error => {
-                    if(error.response.status === 405){
-                        EventBus.$emit('error', error.response.data.error);
-                    }else if(error.response.status === 404){
-                        EventBus.$emit('error', error.response.data.error);
-                    }
-                });
-            }.bind(this))*/
         });
         axios.get('/looechat/get-user-chat-privates').then(function (response) {
             response.data.forEach(function (e) {
@@ -62270,6 +62256,21 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 _this.chats_privates.push(e);
             });
         });
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('join-chat-action', function (id) {
+            var _this2 = this;
+
+            axios.get('/looechat/join/' + id).then(function (response) {
+                if (response.status == 200) {
+                    _this2.chats.push(response.data);
+                }
+            }).catch(function (error) {
+                if (error.response.status === 405) {
+                    __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('error', error.response.data.error);
+                } else if (error.response.status === 404) {
+                    __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('error', error.response.data.error);
+                }
+            });
+        }.bind(this));
     },
 
     methods: {

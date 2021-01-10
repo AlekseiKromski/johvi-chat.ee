@@ -112,20 +112,6 @@ export default {
                 e.statusActive = false;
                 this.chats_rooms.push(e);
             })
-
-            /*EventBus.$on('join-chat-action', function (id){
-                axios.get('/looechat/join/' + id).then(response => {
-                    if(response.status == 200){
-                        this.chats.push(response.data);
-                    }
-                }).catch(error => {
-                    if(error.response.status === 405){
-                        EventBus.$emit('error', error.response.data.error);
-                    }else if(error.response.status === 404){
-                        EventBus.$emit('error', error.response.data.error);
-                    }
-                });
-            }.bind(this))*/
         });
         axios.get('/looechat/get-user-chat-privates').then(response => {
             response.data.forEach(e => {
@@ -133,6 +119,19 @@ export default {
                 this.chats_privates.push(e);
             })
         });
+        EventBus.$on('join-chat-action', function (id){
+            axios.get('/looechat/join/' + id).then(response => {
+                if(response.status == 200){
+                    this.chats.push(response.data);
+                }
+            }).catch(error => {
+                if(error.response.status === 405){
+                    EventBus.$emit('error', error.response.data.error);
+                }else if(error.response.status === 404){
+                    EventBus.$emit('error', error.response.data.error);
+                }
+            });
+        }.bind(this))
     },
     methods:{
         openChatRoomDisplay: function (event){
