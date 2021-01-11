@@ -109,6 +109,9 @@ export default {
         this.socket.on("join-user:App\\Events\\JoinUser", function (data){
 
         }.bind(this));
+        this.socket.on("user-channel." + this.user_id + ":App\\Events\\CreateNewChat", function (data){
+            EventBus.$emit('push-new-chat', data);
+        }.bind(this));
     },
     methods: {
         showError: function (message){

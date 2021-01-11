@@ -56407,6 +56407,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             }
         }.bind(this));
         this.socket.on("join-user:App\\Events\\JoinUser", function (data) {}.bind(this));
+        this.socket.on("user-channel." + this.user_id + ":App\\Events\\CreateNewChat", function (data) {
+            __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('push-new-chat', data);
+        }.bind(this));
     },
 
     methods: {
@@ -62299,7 +62302,7 @@ var render = function() {
             {
               ref: "simplebar",
               staticClass: "list-unstyled mb-0 pr-3",
-              staticStyle: { "max-height": "475px" },
+              staticStyle: { "max-height": "475px", "min-height": "475px" },
               attrs: { "data-simplebar-auto-hide": "false" }
             },
             _vm._l(_vm.dataMessages, function(message) {
@@ -62660,7 +62663,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
             axios.get('/looechat/join/' + id).then(function (response) {
                 if (response.status == 200) {
-                    _this2.chats.push(response.data);
+                    _this2.chats_rooms.push(response.data);
                 }
             }).catch(function (error) {
                 if (error.response.status === 405) {
@@ -62669,6 +62672,12 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                     __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('error', error.response.data.error);
                 }
             });
+        }.bind(this));
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('push-new-chat', function (response) {
+            this.socket.on("private-message." + response.chat.channel_id + ":App\\Events\\PrivateNewMessage", function (data) {
+                __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('message-private-delivered', data);
+            }.bind(this));
+            this.chats_privates.push(response.chat);
         }.bind(this));
     },
 
@@ -62773,7 +62782,7 @@ var render = function() {
     _vm._v(" "),
     _vm.showAddUser
       ? _c("div", { staticClass: "p-3 border-bottom" }, [
-          _c("div", { staticClass: "input-group mb-3" }, [
+          _c("div", { staticClass: "input-group" }, [
             _c("input", {
               directives: [
                 {
@@ -63484,7 +63493,7 @@ exports = module.exports = __webpack_require__(15)(false);
 
 
 // module
-exports.push([module.i, "\n.custom-chat-box[data-v-46b71005]{\r\n    min-height: 450px;\n}\n.list-unstyled[data-v-46b71005]{\r\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-46b71005]{\r\n    background-color: #df7166;\r\n    color: white;\r\n    border: none;\n}\n.btn-custom-primary[data-v-46b71005]:focus{\r\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\r\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\r\n\r\n\r\n", ""]);
+exports.push([module.i, "\n.custom-chat-box[data-v-46b71005]{\n    min-height: 450px;\n}\n.list-unstyled[data-v-46b71005]{\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-46b71005]{\n    background-color: #df7166;\n    color: white;\n    border: none;\n}\n.btn-custom-primary[data-v-46b71005]:focus{\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\n\n\n", ""]);
 
 // exports
 
@@ -63641,7 +63650,7 @@ var render = function() {
             {
               ref: "simplebar",
               staticClass: "list-unstyled mb-0 pr-3",
-              staticStyle: { "max-height": "475px" },
+              staticStyle: { "max-height": "475px", "min-height": "475px" },
               attrs: { "data-simplebar-auto-hide": "false" }
             },
             _vm._l(_vm.dataMessages, function(message) {

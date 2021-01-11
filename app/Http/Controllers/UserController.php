@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\ChatPrivate;
+use App\Events\CreateNewChat;
 use App\User;
 use App\ChatPrivateChannel;
 use App\ChatPrivateMessage;
@@ -125,7 +126,7 @@ class UserController extends Controller
                 $channel = ChatPrivateChannel::create([
                     'name' => Auth::user()->login . '_' . $user->login
                 ]);
-                ChatPrivate::create([
+                $chat = ChatPrivate::create([
                     'user_id' => Auth::id(),
                     'user_2' => $user->id,
                     'channel_id' => $channel->id
@@ -135,6 +136,9 @@ class UserController extends Controller
                     'user_2' => Auth::id(),
                     'channel_id' => $channel->id
                 ]);
+                $chat->sender = $chat->user;
+                $chat->recipient = $chat->recipient;
+                event(new CreateNewChat($chat, Auth::id()));
             }else{
                 return response()->json(['error' => 'У вас уже есть чат с данным человеком'], 403);
             }

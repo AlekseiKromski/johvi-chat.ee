@@ -32,7 +32,7 @@
         </div>
 
         <div class="p-3 border-bottom" v-if="showAddUser">
-            <div class="input-group mb-3">
+            <div class="input-group">
                 <input type="text" class="form-control" placeholder="#xxxx" aria-label="#xxxx" v-model="search_id_user" aria-describedby="button-addon2">
                 <div class="input-group-append">
                     <button class="btn btn-secondary" type="button" id="button-addon2" @click.prevent="addUser()">Добавить</button>
@@ -143,7 +143,7 @@ export default {
         EventBus.$on('join-chat-action', function (id){
             axios.get('/looechat/join/' + id).then(response => {
                 if(response.status == 200){
-                    this.chats.push(response.data);
+                    this.chats_rooms.push(response.data);
                 }
             }).catch(error => {
                 if(error.response.status === 405){
@@ -152,6 +152,12 @@ export default {
                     EventBus.$emit('error', error.response.data.error);
                 }
             });
+        }.bind(this))
+        EventBus.$on('push-new-chat', function (response){
+            this.socket.on("private-message."+ response.chat.channel_id +":App\\Events\\PrivateNewMessage", function (data){
+                EventBus.$emit('message-private-delivered', data);
+            }.bind(this));
+            this.chats_privates.push(response.chat);
         }.bind(this))
     },
     methods:{

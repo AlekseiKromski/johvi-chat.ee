@@ -11,7 +11,7 @@
 
         <div class="px-lg-2 custom-chat-box">
             <div class="chat-conversation p-3">
-                <simplebar class="list-unstyled mb-0 pr-3" ref="simplebar" style="max-height: 475px;" data-simplebar-auto-hide="false">
+                <simplebar class="list-unstyled mb-0 pr-3" ref="simplebar" style="max-height: 475px;min-height: 475px;" data-simplebar-auto-hide="false">
                     <li v-bind:class="{'right' : message.user.username === username}" v-for="message in dataMessages">
                         <div class="conversation-list">
                             <div class="ctext-wrap">
