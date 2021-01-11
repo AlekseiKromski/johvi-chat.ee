@@ -48,7 +48,11 @@
     font-family: Montserrat-Bold;
     padding-bottom: 2%;
 }
-
+.primary-text{
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #df7166;
+}
 @media (max-width: 768px) {
     .login100-form {
         width: 100%;

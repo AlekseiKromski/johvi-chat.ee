@@ -11,7 +11,7 @@
 
         <div class="px-lg-2 custom-chat-box">
             <div class="chat-conversation p-3">
-                <simplebar class="list-unstyled mb-0 pr-3" ref="simplebar" style="max-height: 475px;" data-simplebar-auto-hide="false">
+                <simplebar class="list-unstyled mb-0 pr-3" ref="simplebar" style="max-height: 475px;min-height: 475px;" data-simplebar-auto-hide="false">
                     <li v-bind:class="{'right' : message.user.username === username}" v-for="message in dataMessages">
                         <div class="conversation-list">
                             <div class="ctext-wrap">
@@ -97,7 +97,7 @@ export default {
         //Sys
         getCurrentDate: function (message){
             let date = new Date(message.created_at)
-            let cur_date = date.getHours() + ':' + date.getMinutes()
+            let cur_date = date.getHours() + ':' + (date.getMinutes()<10?'0':'') + date.getMinutes()
             message.date = cur_date;
             return message;
         },

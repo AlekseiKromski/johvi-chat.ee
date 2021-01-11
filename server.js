@@ -6,6 +6,8 @@ let redis = new Redis();
 redis.subscribe('message-room');
 redis.subscribe('join-user');
 redis.psubscribe('private-message.*');
+redis.psubscribe('user-channel.*');
+
 redis.on('message', function (channel, message){
     console.log(message);
     message = JSON.parse(message);
@@ -13,6 +15,12 @@ redis.on('message', function (channel, message){
 });
 
 redis.on('pmessage', function (pattern, channel, message){
+    console.log(message);
+    message = JSON.parse(message);
+    io.emit(channel + ":" + message.event, message.data);
+});
+
+redis.on('pchannel', function (pattern, channel, message){
     console.log(message);
     message = JSON.parse(message);
     io.emit(channel + ":" + message.event, message.data);

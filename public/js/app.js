@@ -56402,11 +56402,15 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         });
         this.socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
         this.socket.on("message-room:App\\Events\\NewMessage", function (data) {
+            __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('update-room-short-text', data);
             if (this.room_id == Number.parseInt(data.message.chat_room_id)) {
                 __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('message-delivered', data);
             }
         }.bind(this));
         this.socket.on("join-user:App\\Events\\JoinUser", function (data) {}.bind(this));
+        this.socket.on("user-channel." + this.user_id + ":App\\Events\\CreateNewChat", function (data) {
+            __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('push-new-chat', data);
+        }.bind(this));
     },
 
     methods: {
@@ -56700,7 +56704,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         //Sys
         getCurrentDate: function getCurrentDate(message) {
             var date = new Date(message.created_at);
-            var cur_date = date.getHours() + ':' + date.getMinutes();
+            var cur_date = date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
             message.date = cur_date;
             return message;
         },
@@ -62299,7 +62303,7 @@ var render = function() {
             {
               ref: "simplebar",
               staticClass: "list-unstyled mb-0 pr-3",
-              staticStyle: { "max-height": "475px" },
+              staticStyle: { "max-height": "475px", "min-height": "475px" },
               attrs: { "data-simplebar-auto-hide": "false" }
             },
             _vm._l(_vm.dataMessages, function(message) {
@@ -62498,7 +62502,7 @@ exports = module.exports = __webpack_require__(15)(false);
 
 
 // module
-exports.push([module.i, "\n.chat-leftsidebar[data-v-2942bf34]{\n    min-height: 655px;\n}\n", ""]);
+exports.push([module.i, "\n.chat-leftsidebar[data-v-2942bf34]{\n    min-height: 655px;\n}\n.new-message[data-v-2942bf34]{\n    padding: 1% 2% 1% 2%;\n    background: #df7166;\n    color: white;\n    border-radius: 10px;\n}\n", ""]);
 
 // exports
 
@@ -62511,6 +62515,22 @@ exports.push([module.i, "\n.chat-leftsidebar[data-v-2942bf34]{\n    min-height: 
 Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_0__eventBus__ = __webpack_require__(25);
 /* harmony import */ var __WEBPACK_IMPORTED_MODULE_1_simplebar_vue__ = __webpack_require__(43);
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 //
 //
 //
@@ -62622,7 +62642,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
             //Add user
             showAddUser: false,
-            search_id_user: null
+            search_id_user: null,
+
+            //Sys
+            chat_simplebar_show: true
         };
     },
     mounted: function mounted() {
@@ -62643,14 +62666,17 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         axios.get('/looechat/get-user-chat-rooms').then(function (response) {
             response.data.forEach(function (e) {
                 e.statusActive = false;
+                e = _this.getCurrentDateSpecial(e);
                 _this.chats_rooms.push(e);
             });
         });
         axios.get('/looechat/get-user-chat-privates').then(function (response) {
             response.data.forEach(function (e) {
+                e = _this.getCurrentDateSpecial(e);
                 e.statusActive = false;
                 _this.chats_privates.push(e);
                 _this.socket.on("private-message." + e.channel_id + ":App\\Events\\PrivateNewMessage", function (data) {
+                    this.setPrivateMessage(data);
                     __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('message-private-delivered', data);
                 }.bind(_this));
             });
@@ -62660,7 +62686,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
             axios.get('/looechat/join/' + id).then(function (response) {
                 if (response.status == 200) {
-                    _this2.chats.push(response.data);
+                    _this2.chats_rooms.push(response.data);
                 }
             }).catch(function (error) {
                 if (error.response.status === 405) {
@@ -62669,6 +62695,15 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                     __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('error', error.response.data.error);
                 }
             });
+        }.bind(this));
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('push-new-chat', function (response) {
+            this.socket.on("private-message." + response.chat.channel_id + ":App\\Events\\PrivateNewMessage", function (data) {
+                __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('message-private-delivered', data);
+            }.bind(this));
+            this.chats_privates.push(response.chat);
+        }.bind(this));
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('update-room-short-text', function (chat) {
+            this.setMessage(chat);
         }.bind(this));
     },
 
@@ -62700,6 +62735,42 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 _this3.search_id_user = '';
                 _this3.showAddUser = false;
             });
+        },
+        setPrivateMessage: function setPrivateMessage(chat) {
+            var _this4 = this;
+
+            this.chats_privates.forEach(function (e) {
+                if (e.channel_id == chat.channel_id) {
+                    e.message = chat.message.message;
+                    e.date = _this4.getCurrentDate(chat.message);
+                }
+            });
+            this.chat_simplebar_show = false;
+            this.chat_simplebar_show = true;
+        },
+        setMessage: function setMessage(chat) {
+            var _this5 = this;
+
+            this.chats_rooms.forEach(function (e) {
+                if (e.chat_room_id == chat.message.chat_room_id) {
+                    e.message = chat.message.message;
+                    e.date = _this5.getCurrentDate(chat.message);
+                }
+            });
+            this.chat_simplebar_show = false;
+            this.chat_simplebar_show = true;
+        },
+        //Sys
+        getCurrentDateSpecial: function getCurrentDateSpecial(e) {
+            var date = new Date(e.message_created_at);
+            var cur_date = date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+            e.date = cur_date;
+            return e;
+        },
+        getCurrentDate: function getCurrentDate(e) {
+            var date = new Date(e.created_at);
+            var cur_date = date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+            return cur_date;
         }
     }
 });
@@ -62715,31 +62786,25 @@ var render = function() {
   return _c("div", { staticClass: "chat-leftsidebar" }, [
     _c("div", { staticClass: "p-3 border-bottom" }, [
       _c("div", { staticClass: "media" }, [
-        _vm._m(0),
-        _vm._v(" "),
         _c("div", { staticClass: "media-body" }, [
           _c("h5", { staticClass: "font-size-15 mt-0 mb-1" }, [
             _vm._v(
               "\n                    " +
                 _vm._s(_vm.username) +
-                "\n                "
-            )
-          ]),
-          _vm._v(" "),
-          _c("h6", { staticClass: "font-size-12 mt-0 mb-1" }, [
-            _vm._v(
-              "\n                    ID:#" +
+                " | ID:#" +
                 _vm._s(_vm.user_id) +
                 "\n                "
             )
           ]),
           _vm._v(" "),
-          _vm._m(1)
+          _c("h6", { staticClass: "font-size-12 mt-0 mb-1" }),
+          _vm._v(" "),
+          _vm._m(0)
         ]),
         _vm._v(" "),
         _c("div", [
           _c("div", { staticClass: "dropdown chat-noti-dropdown" }, [
-            _vm._m(2),
+            _vm._m(1),
             _vm._v(" "),
             _c("div", { staticClass: "dropdown-menu dropdown-menu-right" }, [
               _c(
@@ -62830,7 +62895,7 @@ var render = function() {
             "div",
             [
               _c("h5", { staticClass: "font-size-14 px-3 mb-3" }, [
-                _vm._v("Recent")
+                _vm._v("Чаты")
               ]),
               _vm._v(" "),
               _vm.chats_rooms.length == 0 && _vm.chats_privates.length == 0
@@ -62841,139 +62906,108 @@ var render = function() {
                   ])
                 : _vm._e(),
               _vm._v(" "),
-              _c(
-                "simplebar",
-                {
-                  staticClass: "list-unstyled chat-list",
-                  staticStyle: { "max-height": "475px" }
-                },
-                [
-                  _vm._l(_vm.chats_rooms, function(chat) {
-                    return _c(
-                      "li",
-                      {
-                        attrs: { id: chat.chatroom.id },
-                        on: {
-                          click: function($event) {
-                            $event.preventDefault()
-                            return _vm.openChatRoomDisplay($event)
-                          }
-                        }
-                      },
-                      [
-                        _c("a", { attrs: { href: "" } }, [
-                          _c("div", { staticClass: "media" }, [
-                            _c(
-                              "div",
-                              {
-                                staticClass:
-                                  "user-img online align-self-center mr-3"
-                              },
-                              [
-                                _c("img", {
-                                  staticClass: "rounded-circle avatar-xs",
-                                  attrs: {
-                                    src: "chat/images/users/avatar-2.jpg",
-                                    alt: ""
-                                  }
-                                }),
-                                _vm._v(" "),
-                                _c("span", { staticClass: "user-status" })
-                              ]
-                            ),
-                            _vm._v(" "),
-                            _c(
-                              "div",
-                              { staticClass: "media-body overflow-hidden" },
-                              [
+              _vm.chat_simplebar_show
+                ? _c(
+                    "simplebar",
+                    {
+                      ref: "simplebar",
+                      staticClass: "list-unstyled chat-list",
+                      staticStyle: { "max-height": "475px" }
+                    },
+                    [
+                      _vm._l(_vm.chats_rooms, function(chat) {
+                        return _c(
+                          "li",
+                          {
+                            attrs: { id: chat.chatroom.id },
+                            on: {
+                              click: function($event) {
+                                $event.preventDefault()
+                                return _vm.openChatRoomDisplay($event)
+                              }
+                            }
+                          },
+                          [
+                            _c("a", { attrs: { href: "" } }, [
+                              _c("div", { staticClass: "media" }, [
                                 _c(
-                                  "h5",
-                                  {
-                                    staticClass:
-                                      "text-truncate font-size-14 mb-1"
-                                  },
-                                  [_vm._v(_vm._s(chat.chatroom.name))]
+                                  "div",
+                                  { staticClass: "media-body overflow-hidden" },
+                                  [
+                                    _c(
+                                      "h5",
+                                      {
+                                        staticClass:
+                                          "text-truncate font-size-14 mb-1"
+                                      },
+                                      [_vm._v(_vm._s(chat.chatroom.name))]
+                                    ),
+                                    _vm._v(" "),
+                                    _c(
+                                      "p",
+                                      { staticClass: "text-truncate mb-0" },
+                                      [_vm._v(_vm._s(chat.message))]
+                                    )
+                                  ]
                                 ),
                                 _vm._v(" "),
-                                _c("p", { staticClass: "text-truncate mb-0" }, [
-                                  _vm._v("Hey! there I'm available")
+                                _c("div", { staticClass: "font-size-11" }, [
+                                  _vm._v(_vm._s(chat.date))
                                 ])
-                              ]
-                            ),
-                            _vm._v(" "),
-                            _c("div", { staticClass: "font-size-11" }, [
-                              _vm._v("xx min")
+                              ])
                             ])
-                          ])
-                        ])
-                      ]
-                    )
-                  }),
-                  _vm._v(" "),
-                  _vm._l(_vm.chats_privates, function(chat) {
-                    return _c(
-                      "li",
-                      {
-                        attrs: { id: chat.channel_id },
-                        on: {
-                          click: function($event) {
-                            $event.preventDefault()
-                            return _vm.openChatPrivateDisplay($event)
-                          }
-                        }
-                      },
-                      [
-                        _c("a", { attrs: { href: "" } }, [
-                          _c("div", { staticClass: "media" }, [
-                            _c(
-                              "div",
-                              {
-                                staticClass:
-                                  "user-img online align-self-center mr-3"
-                              },
-                              [
-                                _c("img", {
-                                  staticClass: "rounded-circle avatar-xs",
-                                  attrs: {
-                                    src: "chat/images/users/avatar-2.jpg",
-                                    alt: ""
-                                  }
-                                }),
-                                _vm._v(" "),
-                                _c("span", { staticClass: "user-status" })
-                              ]
-                            ),
-                            _vm._v(" "),
-                            _c(
-                              "div",
-                              { staticClass: "media-body overflow-hidden" },
-                              [
+                          ]
+                        )
+                      }),
+                      _vm._v(" "),
+                      _vm._l(_vm.chats_privates, function(chat) {
+                        return _c(
+                          "li",
+                          {
+                            attrs: { id: chat.channel_id },
+                            on: {
+                              click: function($event) {
+                                $event.preventDefault()
+                                return _vm.openChatPrivateDisplay($event)
+                              }
+                            }
+                          },
+                          [
+                            _c("a", { attrs: { href: "" } }, [
+                              _c("div", { staticClass: "media" }, [
                                 _c(
-                                  "h5",
-                                  {
-                                    staticClass:
-                                      "text-truncate font-size-14 mb-1"
-                                  },
-                                  [_vm._v(_vm._s(chat.recipient.username))]
+                                  "div",
+                                  { staticClass: "media-body overflow-hidden" },
+                                  [
+                                    _c(
+                                      "h5",
+                                      {
+                                        staticClass:
+                                          "text-truncate font-size-14 mb-1"
+                                      },
+                                      [_vm._v(_vm._s(chat.recipient.username))]
+                                    ),
+                                    _vm._v(" "),
+                                    _c(
+                                      "p",
+                                      { staticClass: "text-truncate mb-0" },
+                                      [_vm._v(_vm._s(chat.message))]
+                                    )
+                                  ]
                                 ),
                                 _vm._v(" "),
-                                _c("p", { staticClass: "text-truncate mb-0" }, [
-                                  _vm._v("Hey! there I'm available")
+                                _c("div", { staticClass: "font-size-11" }, [
+                                  _vm._v(_vm._s(chat.date))
                                 ])
-                              ]
-                            ),
-                            _vm._v(" "),
-                            _c("div", { staticClass: "font-size-11" }, [
-                              _vm._v("xx min")
+                              ])
                             ])
-                          ])
-                        ])
-                      ]
-                    )
-                  })
-                ],
-                2
-              )
+                          ]
+                        )
+                      })
+                    ],
+                    2
+                  )
+                : _vm._e()
             ],
             1
           )
@@ -62983,17 +63017,6 @@ var render = function() {
   ])
 }
 var staticRenderFns = [
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "align-self-center mr-3" }, [
-      _c("img", {
-        staticClass: "avatar-xs rounded-circle",
-        attrs: { src: "chat/images/users/avatar-2.jpg", alt: "" }
-      })
-    ])
-  },
   function() {
     var _vm = this
     var _h = _vm.$createElement
@@ -63147,7 +63170,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
-//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -63189,7 +63211,7 @@ var render = function() {
                     "button",
                     {
                       staticClass: "btn btn-outline-primary",
-                      attrs: { id: "1", href: "" },
+                      attrs: { id: "3", href: "" },
                       on: {
                         click: function($event) {
                           $event.preventDefault()
@@ -63197,22 +63219,7 @@ var render = function() {
                         }
                       }
                     },
-                    [_vm._v("ALPHA TEST SERVER")]
-                  ),
-                  _vm._v(" "),
-                  _c(
-                    "button",
-                    {
-                      staticClass: "btn btn-outline-primary",
-                      attrs: { id: "2", href: "" },
-                      on: {
-                        click: function($event) {
-                          $event.preventDefault()
-                          return _vm.joinAction($event)
-                        }
-                      }
-                    },
-                    [_vm._v("ALPHA TEST SERVER2")]
+                    [_vm._v("PUBLIC CHAT")]
                   )
                 ])
               ])
@@ -63484,7 +63491,7 @@ exports = module.exports = __webpack_require__(15)(false);
 
 
 // module
-exports.push([module.i, "\n.custom-chat-box[data-v-46b71005]{\r\n    min-height: 450px;\n}\n.list-unstyled[data-v-46b71005]{\r\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-46b71005]{\r\n    background-color: #df7166;\r\n    color: white;\r\n    border: none;\n}\n.btn-custom-primary[data-v-46b71005]:focus{\r\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\r\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\r\n\r\n\r\n", ""]);
+exports.push([module.i, "\n.custom-chat-box[data-v-46b71005]{\n    min-height: 450px;\n}\n.list-unstyled[data-v-46b71005]{\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-46b71005]{\n    background-color: #df7166;\n    color: white;\n    border: none;\n}\n.btn-custom-primary[data-v-46b71005]:focus{\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\n\n\n", ""]);
 
 // exports
 
@@ -63601,7 +63608,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         //Sys
         getCurrentDate: function getCurrentDate(message) {
             var date = new Date(message.created_at);
-            var cur_date = date.getHours() + ':' + date.getMinutes();
+            var cur_date = date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
             message.date = cur_date;
             return message;
         },
@@ -63641,7 +63648,7 @@ var render = function() {
             {
               ref: "simplebar",
               staticClass: "list-unstyled mb-0 pr-3",
-              staticStyle: { "max-height": "475px" },
+              staticStyle: { "max-height": "475px", "min-height": "475px" },
               attrs: { "data-simplebar-auto-hide": "false" }
             },
             _vm._l(_vm.dataMessages, function(message) {

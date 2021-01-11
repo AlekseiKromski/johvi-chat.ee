@@ -3,15 +3,22 @@
     <div class="chat-leftsidebar">
         <div class="p-3 border-bottom">
             <div class="media">
+                <!--
+
+                FUTURE
+
                 <div class="align-self-center mr-3">
                     <img src="chat/images/users/avatar-2.jpg" class="avatar-xs rounded-circle" alt="">
                 </div>
+
+                -->
+
                 <div class="media-body">
                     <h5 class="font-size-15 mt-0 mb-1">
-                        {{username}}
+                        {{username}} | ID:#{{user_id}}
                     </h5>
                     <h6 class="font-size-12 mt-0 mb-1">
-                        ID:#{{user_id}}
+
                     </h6>
 
                     <p class="text-muted mb-0"><i class="mdi mdi-circle text-success align-middle mr-1"></i> В сети</p>
@@ -42,28 +49,32 @@
         <div class="tab-content py-4">
             <div class="tab-pane show active" id="chat">
                 <div>
-                    <h5 class="font-size-14 px-3 mb-3">Recent</h5>
+                    <h5 class="font-size-14 px-3 mb-3">Чаты</h5>
                     <p class="px-3 mb-3" v-if="chats_rooms.length == 0 && chats_privates.length == 0">
                         You dont have chats 😔
                     </p>
 
-                    <simplebar style="max-height: 475px;" class="list-unstyled chat-list">
+                    <simplebar v-if="chat_simplebar_show" ref="simplebar" style="max-height: 475px;" class="list-unstyled chat-list">
                         <!--class="active"-->
                         <!-- v-bind:class="{'active' : chat.statusActive}" -->
                         <li v-for="chat in chats_rooms" v-bind:id="chat.chatroom.id" v-on:click.prevent="openChatRoomDisplay($event)">
                             <a href="">
                                 <div class="media">
+                                    <!--
+
+                                    FUTURE
 
                                     <div class="user-img online align-self-center mr-3">
                                         <img src="chat/images/users/avatar-2.jpg" class="rounded-circle avatar-xs" alt="">
                                         <span class="user-status"></span>
                                     </div>
+                                    -->
 
                                     <div class="media-body overflow-hidden">
                                         <h5 class="text-truncate font-size-14 mb-1">{{ chat.chatroom.name }}</h5>
-                                        <p class="text-truncate mb-0">Hey! there I'm available</p>
+                                        <p class="text-truncate mb-0">{{ chat.message }}</p>
                                     </div>
-                                    <div class="font-size-11">xx min</div>
+                                    <div class="font-size-11">{{ chat.date }}</div>
                                 </div>
                             </a>
                         </li>
@@ -72,16 +83,21 @@
                             <a href="">
                                 <div class="media">
 
+                                    <!--
+
+                                    FUTURE
+
                                     <div class="user-img online align-self-center mr-3">
                                         <img src="chat/images/users/avatar-2.jpg" class="rounded-circle avatar-xs" alt="">
                                         <span class="user-status"></span>
                                     </div>
+                                    -->
 
                                     <div class="media-body overflow-hidden">
                                         <h5 class="text-truncate font-size-14 mb-1">{{ chat.recipient.username }}</h5>
-                                        <p class="text-truncate mb-0">Hey! there I'm available</p>
+                                        <p class="text-truncate mb-0">{{chat.message}}</p>
                                     </div>
-                                    <div class="font-size-11">xx min</div>
+                                    <div class="font-size-11">{{ chat.date }}</div>
                                 </div>
                             </a>
                         </li>
@@ -109,7 +125,10 @@ export default {
 
             //Add user
             showAddUser: false,
-            search_id_user: null
+            search_id_user: null,
+
+            //Sys
+            chat_simplebar_show: true,
         }
     },
     mounted(){
@@ -128,14 +147,17 @@ export default {
         axios.get('/looechat/get-user-chat-rooms').then(response => {
             response.data.forEach(e => {
                 e.statusActive = false;
+                e = this.getCurrentDateSpecial(e)
                 this.chats_rooms.push(e);
             })
         });
         axios.get('/looechat/get-user-chat-privates').then(response => {
             response.data.forEach(e => {
+                e = this.getCurrentDateSpecial(e);
                 e.statusActive = false;
                 this.chats_privates.push(e);
                 this.socket.on("private-message."+ e.channel_id +":App\\Events\\PrivateNewMessage", function (data){
+                    this.setPrivateMessage(data);
                     EventBus.$emit('message-private-delivered', data);
                 }.bind(this));
             });
@@ -143,7 +165,7 @@ export default {
         EventBus.$on('join-chat-action', function (id){
             axios.get('/looechat/join/' + id).then(response => {
                 if(response.status == 200){
-                    this.chats.push(response.data);
+                    this.chats_rooms.push(response.data);
                 }
             }).catch(error => {
                 if(error.response.status === 405){
@@ -153,6 +175,15 @@ export default {
                 }
             });
         }.bind(this))
+        EventBus.$on('push-new-chat', function (response){
+            this.socket.on("private-message."+ response.chat.channel_id +":App\\Events\\PrivateNewMessage", function (data){
+                EventBus.$emit('message-private-delivered', data);
+            }.bind(this));
+            this.chats_privates.push(response.chat);
+        }.bind(this))
+        EventBus.$on('update-room-short-text', function(chat){
+            this.setMessage(chat);
+        }.bind(this));
     },
     methods:{
         openChatRoomDisplay: function (event){
@@ -181,7 +212,40 @@ export default {
                 this.search_id_user = '';
                 this.showAddUser = false;
             });
-        }
+        },
+        setPrivateMessage: function (chat){
+            this.chats_privates.forEach(e => {
+               if(e.channel_id == chat.channel_id){
+                   e.message = chat.message.message;
+                   e.date = this.getCurrentDate(chat.message);
+               }
+            });
+            this.chat_simplebar_show = false;
+            this.chat_simplebar_show = true;
+        },
+        setMessage: function (chat){
+
+            this.chats_rooms.forEach(e => {
+                if(e.chat_room_id == chat.message.chat_room_id){
+                    e.message = chat.message.message;
+                    e.date = this.getCurrentDate(chat.message);
+                }
+            });
+            this.chat_simplebar_show = false;
+            this.chat_simplebar_show = true;
+        },
+        //Sys
+        getCurrentDateSpecial: function (e){
+            let date = new Date(e.message_created_at)
+            let cur_date = date.getHours() + ':' + (date.getMinutes()<10?'0':'') + date.getMinutes()
+            e.date = cur_date;
+            return e;
+        },
+        getCurrentDate: function (e){
+            let date = new Date(e.created_at)
+            let cur_date = date.getHours() + ':' + (date.getMinutes()<10?'0':'') + date.getMinutes()
+            return cur_date;
+        },
     }
 }
 </script>
@@ -189,5 +253,11 @@ export default {
 <style scoped>
     .chat-leftsidebar{
         min-height: 655px;
+    }
+    .new-message{
+        padding: 1% 2% 1% 2%;
+        background: #df7166;
+        color: white;
+        border-radius: 10px;
     }
 </style>
