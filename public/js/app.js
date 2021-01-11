@@ -62609,6 +62609,22 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
+//
 
 
 
@@ -62770,31 +62786,25 @@ var render = function() {
   return _c("div", { staticClass: "chat-leftsidebar" }, [
     _c("div", { staticClass: "p-3 border-bottom" }, [
       _c("div", { staticClass: "media" }, [
-        _vm._m(0),
-        _vm._v(" "),
         _c("div", { staticClass: "media-body" }, [
           _c("h5", { staticClass: "font-size-15 mt-0 mb-1" }, [
             _vm._v(
               "\n                    " +
                 _vm._s(_vm.username) +
-                "\n                "
-            )
-          ]),
-          _vm._v(" "),
-          _c("h6", { staticClass: "font-size-12 mt-0 mb-1" }, [
-            _vm._v(
-              "\n                    ID:#" +
+                " | ID:#" +
                 _vm._s(_vm.user_id) +
                 "\n                "
             )
           ]),
           _vm._v(" "),
-          _vm._m(1)
+          _c("h6", { staticClass: "font-size-12 mt-0 mb-1" }),
+          _vm._v(" "),
+          _vm._m(0)
         ]),
         _vm._v(" "),
         _c("div", [
           _c("div", { staticClass: "dropdown chat-noti-dropdown" }, [
-            _vm._m(2),
+            _vm._m(1),
             _vm._v(" "),
             _c("div", { staticClass: "dropdown-menu dropdown-menu-right" }, [
               _c(
@@ -62885,7 +62895,7 @@ var render = function() {
             "div",
             [
               _c("h5", { staticClass: "font-size-14 px-3 mb-3" }, [
-                _vm._v("Recent")
+                _vm._v("Чаты")
               ]),
               _vm._v(" "),
               _vm.chats_rooms.length == 0 && _vm.chats_privates.length == 0
@@ -62920,25 +62930,6 @@ var render = function() {
                           [
                             _c("a", { attrs: { href: "" } }, [
                               _c("div", { staticClass: "media" }, [
-                                _c(
-                                  "div",
-                                  {
-                                    staticClass:
-                                      "user-img online align-self-center mr-3"
-                                  },
-                                  [
-                                    _c("img", {
-                                      staticClass: "rounded-circle avatar-xs",
-                                      attrs: {
-                                        src: "chat/images/users/avatar-2.jpg",
-                                        alt: ""
-                                      }
-                                    }),
-                                    _vm._v(" "),
-                                    _c("span", { staticClass: "user-status" })
-                                  ]
-                                ),
-                                _vm._v(" "),
                                 _c(
                                   "div",
                                   { staticClass: "media-body overflow-hidden" },
@@ -62986,25 +62977,6 @@ var render = function() {
                               _c("div", { staticClass: "media" }, [
                                 _c(
                                   "div",
-                                  {
-                                    staticClass:
-                                      "user-img online align-self-center mr-3"
-                                  },
-                                  [
-                                    _c("img", {
-                                      staticClass: "rounded-circle avatar-xs",
-                                      attrs: {
-                                        src: "chat/images/users/avatar-2.jpg",
-                                        alt: ""
-                                      }
-                                    }),
-                                    _vm._v(" "),
-                                    _c("span", { staticClass: "user-status" })
-                                  ]
-                                ),
-                                _vm._v(" "),
-                                _c(
-                                  "div",
                                   { staticClass: "media-body overflow-hidden" },
                                   [
                                     _c(
@@ -63045,17 +63017,6 @@ var render = function() {
   ])
 }
 var staticRenderFns = [
-  function() {
-    var _vm = this
-    var _h = _vm.$createElement
-    var _c = _vm._self._c || _h
-    return _c("div", { staticClass: "align-self-center mr-3" }, [
-      _c("img", {
-        staticClass: "avatar-xs rounded-circle",
-        attrs: { src: "chat/images/users/avatar-2.jpg", alt: "" }
-      })
-    ])
-  },
   function() {
     var _vm = this
     var _h = _vm.$createElement

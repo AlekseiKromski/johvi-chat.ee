@@ -3,15 +3,22 @@
     <div class="chat-leftsidebar">
         <div class="p-3 border-bottom">
             <div class="media">
+                <!--
+
+                FUTURE
+
                 <div class="align-self-center mr-3">
                     <img src="chat/images/users/avatar-2.jpg" class="avatar-xs rounded-circle" alt="">
                 </div>
+
+                -->
+
                 <div class="media-body">
                     <h5 class="font-size-15 mt-0 mb-1">
-                        {{username}}
+                        {{username}} | ID:#{{user_id}}
                     </h5>
                     <h6 class="font-size-12 mt-0 mb-1">
-                        ID:#{{user_id}}
+
                     </h6>
 
                     <p class="text-muted mb-0"><i class="mdi mdi-circle text-success align-middle mr-1"></i> В сети</p>
@@ -42,7 +49,7 @@
         <div class="tab-content py-4">
             <div class="tab-pane show active" id="chat">
                 <div>
-                    <h5 class="font-size-14 px-3 mb-3">Recent</h5>
+                    <h5 class="font-size-14 px-3 mb-3">Чаты</h5>
                     <p class="px-3 mb-3" v-if="chats_rooms.length == 0 && chats_privates.length == 0">
                         You dont have chats 😔
                     </p>
@@ -53,11 +60,15 @@
                         <li v-for="chat in chats_rooms" v-bind:id="chat.chatroom.id" v-on:click.prevent="openChatRoomDisplay($event)">
                             <a href="">
                                 <div class="media">
+                                    <!--
+
+                                    FUTURE
 
                                     <div class="user-img online align-self-center mr-3">
                                         <img src="chat/images/users/avatar-2.jpg" class="rounded-circle avatar-xs" alt="">
                                         <span class="user-status"></span>
                                     </div>
+                                    -->
 
                                     <div class="media-body overflow-hidden">
                                         <h5 class="text-truncate font-size-14 mb-1">{{ chat.chatroom.name }}</h5>
@@ -72,10 +83,15 @@
                             <a href="">
                                 <div class="media">
 
+                                    <!--
+
+                                    FUTURE
+
                                     <div class="user-img online align-self-center mr-3">
                                         <img src="chat/images/users/avatar-2.jpg" class="rounded-circle avatar-xs" alt="">
                                         <span class="user-status"></span>
                                     </div>
+                                    -->
 
                                     <div class="media-body overflow-hidden">
                                         <h5 class="text-truncate font-size-14 mb-1">{{ chat.recipient.username }}</h5>
