@@ -83,9 +83,9 @@ class UserController extends Controller
                 ->orderBy('id', 'desc')
                 ->limit(1)->get();
             if(count($message) == 0){
-                $chat->messsage = 'No messages';
+                $chat->message = 'No messages';
             }else{
-                $chat->messsage = $message->message;
+                $chat->message = $message[0]->message;
             }
         }
         return response()->json($chats);

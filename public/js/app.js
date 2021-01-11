@@ -63177,7 +63177,6 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 //
 //
 //
-//
 
 
 /* harmony default export */ __webpack_exports__["default"] = ({
@@ -63219,7 +63218,7 @@ var render = function() {
                     "button",
                     {
                       staticClass: "btn btn-outline-primary",
-                      attrs: { id: "1", href: "" },
+                      attrs: { id: "3", href: "" },
                       on: {
                         click: function($event) {
                           $event.preventDefault()
@@ -63227,22 +63226,7 @@ var render = function() {
                         }
                       }
                     },
-                    [_vm._v("ALPHA TEST SERVER")]
-                  ),
-                  _vm._v(" "),
-                  _c(
-                    "button",
-                    {
-                      staticClass: "btn btn-outline-primary",
-                      attrs: { id: "2", href: "" },
-                      on: {
-                        click: function($event) {
-                          $event.preventDefault()
-                          return _vm.joinAction($event)
-                        }
-                      }
-                    },
-                    [_vm._v("ALPHA TEST SERVER2")]
+                    [_vm._v("PUBLIC CHAT")]
                   )
                 ])
               ])
