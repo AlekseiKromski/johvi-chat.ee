@@ -92,11 +92,12 @@ class UserController extends Controller
                 ->orderBy('id', 'desc')
                 ->limit(1)->get();
             if(count($message) == 0){
+                $chat->message_created_at = date('Y-m-d H:i:s');
                 $chat->message = 'No messages';
             }else{
+                $chat->message_created_at = $message[0]->created_at->format('Y-m-d H:i:s');
                 $chat->message = $message[0]->message;
             }
-            $chat->message_created_at = $message[0]->created_at->format('Y-m-d H:i:s');
         }
         return response()->json($chats);
     }
