@@ -102,6 +102,7 @@ export default {
         EventBus.$on('open-chat-private-display', channel => {this.openChatPrivateDisplay(channel)});
         this.socket = io.connect('http://178.248.138.70:3000', {transports: ['websocket', 'polling', 'flashsocket']});
         this.socket.on("message-room:App\\Events\\NewMessage", function (data){
+            EventBus.$emit('update-room-short-text', data);
             if(this.room_id == Number.parseInt(data.message.chat_room_id)){
                 EventBus.$emit('message-delivered', data);
             }

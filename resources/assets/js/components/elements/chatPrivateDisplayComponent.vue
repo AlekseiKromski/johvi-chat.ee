@@ -97,7 +97,7 @@ export default {
         //Sys
         getCurrentDate: function (message){
             let date = new Date(message.created_at)
-            let cur_date = date.getHours() + ':' + date.getMinutes()
+            let cur_date = date.getHours() + ':' + (date.getMinutes()<10?'0':'') + date.getMinutes()
             message.date = cur_date;
             return message;
         },

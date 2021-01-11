@@ -56402,6 +56402,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         });
         this.socket = io.connect('http://178.248.138.70:3000', { transports: ['websocket', 'polling', 'flashsocket'] });
         this.socket.on("message-room:App\\Events\\NewMessage", function (data) {
+            __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('update-room-short-text', data);
             if (this.room_id == Number.parseInt(data.message.chat_room_id)) {
                 __WEBPACK_IMPORTED_MODULE_5__eventBus__["a" /* default */].$emit('message-delivered', data);
             }
@@ -56703,7 +56704,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         //Sys
         getCurrentDate: function getCurrentDate(message) {
             var date = new Date(message.created_at);
-            var cur_date = date.getHours() + ':' + date.getMinutes();
+            var cur_date = date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
             message.date = cur_date;
             return message;
         },
@@ -62501,7 +62502,7 @@ exports = module.exports = __webpack_require__(15)(false);
 
 
 // module
-exports.push([module.i, "\n.chat-leftsidebar[data-v-2942bf34]{\n    min-height: 655px;\n}\n", ""]);
+exports.push([module.i, "\n.chat-leftsidebar[data-v-2942bf34]{\n    min-height: 655px;\n}\n.new-message[data-v-2942bf34]{\n    padding: 1% 2% 1% 2%;\n    background: #df7166;\n    color: white;\n    border-radius: 10px;\n}\n", ""]);
 
 // exports
 
@@ -62649,15 +62650,17 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         axios.get('/looechat/get-user-chat-rooms').then(function (response) {
             response.data.forEach(function (e) {
                 e.statusActive = false;
+                e = _this.getCurrentDateSpecial(e);
                 _this.chats_rooms.push(e);
             });
         });
         axios.get('/looechat/get-user-chat-privates').then(function (response) {
             response.data.forEach(function (e) {
+                e = _this.getCurrentDateSpecial(e);
                 e.statusActive = false;
                 _this.chats_privates.push(e);
                 _this.socket.on("private-message." + e.channel_id + ":App\\Events\\PrivateNewMessage", function (data) {
-                    this.setMessage(data);
+                    this.setPrivateMessage(data);
                     __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('message-private-delivered', data);
                 }.bind(_this));
             });
@@ -62682,6 +62685,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('message-private-delivered', data);
             }.bind(this));
             this.chats_privates.push(response.chat);
+        }.bind(this));
+        __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('update-room-short-text', function (chat) {
+            this.setMessage(chat);
         }.bind(this));
     },
 
@@ -62714,15 +62720,41 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 _this3.showAddUser = false;
             });
         },
-        setMessage: function setMessage(chat) {
+        setPrivateMessage: function setPrivateMessage(chat) {
+            var _this4 = this;
+
             this.chats_privates.forEach(function (e) {
                 if (e.channel_id == chat.channel_id) {
                     e.message = chat.message.message;
+                    e.date = _this4.getCurrentDate(chat.message);
                 }
             });
             this.chat_simplebar_show = false;
             this.chat_simplebar_show = true;
-            console.log(this.$refs.simplebar.$destroy);
+        },
+        setMessage: function setMessage(chat) {
+            var _this5 = this;
+
+            this.chats_rooms.forEach(function (e) {
+                if (e.chat_room_id == chat.message.chat_room_id) {
+                    e.message = chat.message.message;
+                    e.date = _this5.getCurrentDate(chat.message);
+                }
+            });
+            this.chat_simplebar_show = false;
+            this.chat_simplebar_show = true;
+        },
+        //Sys
+        getCurrentDateSpecial: function getCurrentDateSpecial(e) {
+            var date = new Date(e.message_created_at);
+            var cur_date = date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+            e.date = cur_date;
+            return e;
+        },
+        getCurrentDate: function getCurrentDate(e) {
+            var date = new Date(e.created_at);
+            var cur_date = date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
+            return cur_date;
         }
     }
 });
@@ -62923,13 +62955,13 @@ var render = function() {
                                     _c(
                                       "p",
                                       { staticClass: "text-truncate mb-0" },
-                                      [_vm._v("Hey! there I'm available")]
+                                      [_vm._v(_vm._s(chat.message))]
                                     )
                                   ]
                                 ),
                                 _vm._v(" "),
                                 _c("div", { staticClass: "font-size-11" }, [
-                                  _vm._v("xx min")
+                                  _vm._v(_vm._s(chat.date))
                                 ])
                               ])
                             ])
@@ -62993,7 +63025,7 @@ var render = function() {
                                 ),
                                 _vm._v(" "),
                                 _c("div", { staticClass: "font-size-11" }, [
-                                  _vm._v("xx min")
+                                  _vm._v(_vm._s(chat.date))
                                 ])
                               ])
                             ])
@@ -63615,7 +63647,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         //Sys
         getCurrentDate: function getCurrentDate(message) {
             var date = new Date(message.created_at);
-            var cur_date = date.getHours() + ':' + date.getMinutes();
+            var cur_date = date.getHours() + ':' + (date.getMinutes() < 10 ? '0' : '') + date.getMinutes();
             message.date = cur_date;
             return message;
         },
