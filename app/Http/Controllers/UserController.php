@@ -79,6 +79,14 @@ class UserController extends Controller
         foreach ($chats as $chat){
             $chat->sender = $chat->user;
             $chat->recipient = $chat->recipient;
+            $message = ChatPrivateMessage::where('channel_id', '=', $chat->channel_id)
+                ->orderBy('id', 'desc')
+                ->limit(1)->get();
+            if(count($message) == 0){
+                $chat->messsage = 'No messages';
+            }else{
+                $chat->messsage = $message->message;
+            }
         }
         return response()->json($chats);
     }

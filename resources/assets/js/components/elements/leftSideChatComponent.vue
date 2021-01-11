@@ -47,7 +47,7 @@
                         You dont have chats 😔
                     </p>
 
-                    <simplebar style="max-height: 475px;" class="list-unstyled chat-list">
+                    <simplebar v-if="chat_simplebar_show" ref="simplebar" style="max-height: 475px;" class="list-unstyled chat-list">
                         <!--class="active"-->
                         <!-- v-bind:class="{'active' : chat.statusActive}" -->
                         <li v-for="chat in chats_rooms" v-bind:id="chat.chatroom.id" v-on:click.prevent="openChatRoomDisplay($event)">
@@ -79,7 +79,7 @@
 
                                     <div class="media-body overflow-hidden">
                                         <h5 class="text-truncate font-size-14 mb-1">{{ chat.recipient.username }}</h5>
-                                        <p class="text-truncate mb-0">Hey! there I'm available</p>
+                                        <p class="text-truncate mb-0">{{chat.message}}</p>
                                     </div>
                                     <div class="font-size-11">xx min</div>
                                 </div>
@@ -109,7 +109,10 @@ export default {
 
             //Add user
             showAddUser: false,
-            search_id_user: null
+            search_id_user: null,
+
+            //Sys
+            chat_simplebar_show: true,
         }
     },
     mounted(){
@@ -136,6 +139,7 @@ export default {
                 e.statusActive = false;
                 this.chats_privates.push(e);
                 this.socket.on("private-message."+ e.channel_id +":App\\Events\\PrivateNewMessage", function (data){
+                    this.setMessage(data);
                     EventBus.$emit('message-private-delivered', data);
                 }.bind(this));
             });
@@ -187,6 +191,16 @@ export default {
                 this.search_id_user = '';
                 this.showAddUser = false;
             });
+        },
+        setMessage: function (chat){
+            this.chats_privates.forEach(e => {
+               if(e.channel_id == chat.channel_id){
+                   e.message = chat.message.message;
+               }
+            });
+            this.chat_simplebar_show = false;
+            this.chat_simplebar_show = true;
+            console.log(this.$refs.simplebar.$destroy)
         }
     }
 }

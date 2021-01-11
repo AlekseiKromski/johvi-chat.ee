@@ -62625,7 +62625,10 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
 
             //Add user
             showAddUser: false,
-            search_id_user: null
+            search_id_user: null,
+
+            //Sys
+            chat_simplebar_show: true
         };
     },
     mounted: function mounted() {
@@ -62654,6 +62657,7 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 e.statusActive = false;
                 _this.chats_privates.push(e);
                 _this.socket.on("private-message." + e.channel_id + ":App\\Events\\PrivateNewMessage", function (data) {
+                    this.setMessage(data);
                     __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('message-private-delivered', data);
                 }.bind(_this));
             });
@@ -62709,6 +62713,16 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
                 _this3.search_id_user = '';
                 _this3.showAddUser = false;
             });
+        },
+        setMessage: function setMessage(chat) {
+            this.chats_privates.forEach(function (e) {
+                if (e.channel_id == chat.channel_id) {
+                    e.message = chat.message.message;
+                }
+            });
+            this.chat_simplebar_show = false;
+            this.chat_simplebar_show = true;
+            console.log(this.$refs.simplebar.$destroy);
         }
     }
 });
@@ -62850,139 +62864,146 @@ var render = function() {
                   ])
                 : _vm._e(),
               _vm._v(" "),
-              _c(
-                "simplebar",
-                {
-                  staticClass: "list-unstyled chat-list",
-                  staticStyle: { "max-height": "475px" }
-                },
-                [
-                  _vm._l(_vm.chats_rooms, function(chat) {
-                    return _c(
-                      "li",
-                      {
-                        attrs: { id: chat.chatroom.id },
-                        on: {
-                          click: function($event) {
-                            $event.preventDefault()
-                            return _vm.openChatRoomDisplay($event)
-                          }
-                        }
-                      },
-                      [
-                        _c("a", { attrs: { href: "" } }, [
-                          _c("div", { staticClass: "media" }, [
-                            _c(
-                              "div",
-                              {
-                                staticClass:
-                                  "user-img online align-self-center mr-3"
-                              },
-                              [
-                                _c("img", {
-                                  staticClass: "rounded-circle avatar-xs",
-                                  attrs: {
-                                    src: "chat/images/users/avatar-2.jpg",
-                                    alt: ""
-                                  }
-                                }),
-                                _vm._v(" "),
-                                _c("span", { staticClass: "user-status" })
-                              ]
-                            ),
-                            _vm._v(" "),
-                            _c(
-                              "div",
-                              { staticClass: "media-body overflow-hidden" },
-                              [
+              _vm.chat_simplebar_show
+                ? _c(
+                    "simplebar",
+                    {
+                      ref: "simplebar",
+                      staticClass: "list-unstyled chat-list",
+                      staticStyle: { "max-height": "475px" }
+                    },
+                    [
+                      _vm._l(_vm.chats_rooms, function(chat) {
+                        return _c(
+                          "li",
+                          {
+                            attrs: { id: chat.chatroom.id },
+                            on: {
+                              click: function($event) {
+                                $event.preventDefault()
+                                return _vm.openChatRoomDisplay($event)
+                              }
+                            }
+                          },
+                          [
+                            _c("a", { attrs: { href: "" } }, [
+                              _c("div", { staticClass: "media" }, [
                                 _c(
-                                  "h5",
+                                  "div",
                                   {
                                     staticClass:
-                                      "text-truncate font-size-14 mb-1"
+                                      "user-img online align-self-center mr-3"
                                   },
-                                  [_vm._v(_vm._s(chat.chatroom.name))]
+                                  [
+                                    _c("img", {
+                                      staticClass: "rounded-circle avatar-xs",
+                                      attrs: {
+                                        src: "chat/images/users/avatar-2.jpg",
+                                        alt: ""
+                                      }
+                                    }),
+                                    _vm._v(" "),
+                                    _c("span", { staticClass: "user-status" })
+                                  ]
                                 ),
                                 _vm._v(" "),
-                                _c("p", { staticClass: "text-truncate mb-0" }, [
-                                  _vm._v("Hey! there I'm available")
-                                ])
-                              ]
-                            ),
-                            _vm._v(" "),
-                            _c("div", { staticClass: "font-size-11" }, [
-                              _vm._v("xx min")
-                            ])
-                          ])
-                        ])
-                      ]
-                    )
-                  }),
-                  _vm._v(" "),
-                  _vm._l(_vm.chats_privates, function(chat) {
-                    return _c(
-                      "li",
-                      {
-                        attrs: { id: chat.channel_id },
-                        on: {
-                          click: function($event) {
-                            $event.preventDefault()
-                            return _vm.openChatPrivateDisplay($event)
-                          }
-                        }
-                      },
-                      [
-                        _c("a", { attrs: { href: "" } }, [
-                          _c("div", { staticClass: "media" }, [
-                            _c(
-                              "div",
-                              {
-                                staticClass:
-                                  "user-img online align-self-center mr-3"
-                              },
-                              [
-                                _c("img", {
-                                  staticClass: "rounded-circle avatar-xs",
-                                  attrs: {
-                                    src: "chat/images/users/avatar-2.jpg",
-                                    alt: ""
-                                  }
-                                }),
-                                _vm._v(" "),
-                                _c("span", { staticClass: "user-status" })
-                              ]
-                            ),
-                            _vm._v(" "),
-                            _c(
-                              "div",
-                              { staticClass: "media-body overflow-hidden" },
-                              [
                                 _c(
-                                  "h5",
+                                  "div",
+                                  { staticClass: "media-body overflow-hidden" },
+                                  [
+                                    _c(
+                                      "h5",
+                                      {
+                                        staticClass:
+                                          "text-truncate font-size-14 mb-1"
+                                      },
+                                      [_vm._v(_vm._s(chat.chatroom.name))]
+                                    ),
+                                    _vm._v(" "),
+                                    _c(
+                                      "p",
+                                      { staticClass: "text-truncate mb-0" },
+                                      [_vm._v("Hey! there I'm available")]
+                                    )
+                                  ]
+                                ),
+                                _vm._v(" "),
+                                _c("div", { staticClass: "font-size-11" }, [
+                                  _vm._v("xx min")
+                                ])
+                              ])
+                            ])
+                          ]
+                        )
+                      }),
+                      _vm._v(" "),
+                      _vm._l(_vm.chats_privates, function(chat) {
+                        return _c(
+                          "li",
+                          {
+                            attrs: { id: chat.channel_id },
+                            on: {
+                              click: function($event) {
+                                $event.preventDefault()
+                                return _vm.openChatPrivateDisplay($event)
+                              }
+                            }
+                          },
+                          [
+                            _c("a", { attrs: { href: "" } }, [
+                              _c("div", { staticClass: "media" }, [
+                                _c(
+                                  "div",
                                   {
                                     staticClass:
-                                      "text-truncate font-size-14 mb-1"
+                                      "user-img online align-self-center mr-3"
                                   },
-                                  [_vm._v(_vm._s(chat.recipient.username))]
+                                  [
+                                    _c("img", {
+                                      staticClass: "rounded-circle avatar-xs",
+                                      attrs: {
+                                        src: "chat/images/users/avatar-2.jpg",
+                                        alt: ""
+                                      }
+                                    }),
+                                    _vm._v(" "),
+                                    _c("span", { staticClass: "user-status" })
+                                  ]
                                 ),
                                 _vm._v(" "),
-                                _c("p", { staticClass: "text-truncate mb-0" }, [
-                                  _vm._v("Hey! there I'm available")
+                                _c(
+                                  "div",
+                                  { staticClass: "media-body overflow-hidden" },
+                                  [
+                                    _c(
+                                      "h5",
+                                      {
+                                        staticClass:
+                                          "text-truncate font-size-14 mb-1"
+                                      },
+                                      [_vm._v(_vm._s(chat.recipient.username))]
+                                    ),
+                                    _vm._v(" "),
+                                    _c(
+                                      "p",
+                                      { staticClass: "text-truncate mb-0" },
+                                      [_vm._v(_vm._s(chat.message))]
+                                    )
+                                  ]
+                                ),
+                                _vm._v(" "),
+                                _c("div", { staticClass: "font-size-11" }, [
+                                  _vm._v("xx min")
                                 ])
-                              ]
-                            ),
-                            _vm._v(" "),
-                            _c("div", { staticClass: "font-size-11" }, [
-                              _vm._v("xx min")
+                              ])
                             ])
-                          ])
-                        ])
-                      ]
-                    )
-                  })
-                ],
-                2
-              )
+                          ]
+                        )
+                      })
+                    ],
+                    2
+                  )
+                : _vm._e()
             ],
             1
           )
