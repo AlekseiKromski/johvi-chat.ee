@@ -62700,6 +62700,8 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
             this.socket.on("private-message." + response.chat.channel_id + ":App\\Events\\PrivateNewMessage", function (data) {
                 __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('message-private-delivered', data);
             }.bind(this));
+            console.log(response.chat);
+            response.chat = this.getCurrentDateSpecial(response.chat);
             this.chats_privates.push(response.chat);
         }.bind(this));
         __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('update-room-short-text', function (chat) {
@@ -63491,7 +63493,7 @@ exports = module.exports = __webpack_require__(15)(false);
 
 
 // module
-exports.push([module.i, "\n.custom-chat-box[data-v-46b71005]{\n    min-height: 450px;\n}\n.list-unstyled[data-v-46b71005]{\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-46b71005]{\n    background-color: #df7166;\n    color: white;\n    border: none;\n}\n.btn-custom-primary[data-v-46b71005]:focus{\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\n\n\n", ""]);
+exports.push([module.i, "\n.custom-chat-box[data-v-46b71005]{\r\n    min-height: 450px;\n}\n.list-unstyled[data-v-46b71005]{\r\n    min-height: 450px;\n}\n.btn-custom-primary[data-v-46b71005]{\r\n    background-color: #df7166;\r\n    color: white;\r\n    border: none;\n}\n.btn-custom-primary[data-v-46b71005]:focus{\r\n    -webkit-box-shadow: 0 0 0 3px rgba(223,113,102,.5);\r\n            box-shadow: 0 0 0 3px rgba(223,113,102,.5);\n}\r\n\r\n\r\n", ""]);
 
 // exports
 

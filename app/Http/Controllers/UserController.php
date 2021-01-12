@@ -155,8 +155,8 @@ class UserController extends Controller
                     'user_2' => Auth::id(),
                     'channel_id' => $channel->id
                 ]);
-                $chat->sender = $chat->user;
-                $chat->recipient = $chat->recipient;
+
+                event(new CreateNewChat($chat, $user->id));
                 event(new CreateNewChat($chat, Auth::id()));
             }else{
                 return response()->json(['error' => 'У вас уже есть чат с данным человеком'], 403);
