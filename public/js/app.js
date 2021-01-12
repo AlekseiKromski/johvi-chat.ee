@@ -62698,9 +62698,9 @@ Object.defineProperty(__webpack_exports__, "__esModule", { value: true });
         }.bind(this));
         __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$on('push-new-chat', function (response) {
             this.socket.on("private-message." + response.chat.channel_id + ":App\\Events\\PrivateNewMessage", function (data) {
+                this.setPrivateMessage(data);
                 __WEBPACK_IMPORTED_MODULE_0__eventBus__["a" /* default */].$emit('message-private-delivered', data);
             }.bind(this));
-            console.log(response.chat);
             response.chat = this.getCurrentDateSpecial(response.chat);
             this.chats_privates.push(response.chat);
         }.bind(this));

@@ -177,9 +177,9 @@ export default {
         }.bind(this))
         EventBus.$on('push-new-chat', function (response){
             this.socket.on("private-message."+ response.chat.channel_id +":App\\Events\\PrivateNewMessage", function (data){
+                this.setPrivateMessage(data);
                 EventBus.$emit('message-private-delivered', data);
             }.bind(this));
-            console.log(response.chat);
             response.chat= this.getCurrentDateSpecial(response.chat);
             this.chats_privates.push(response.chat);
         }.bind(this))
