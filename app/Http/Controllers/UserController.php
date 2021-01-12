@@ -150,13 +150,13 @@ class UserController extends Controller
                     'user_2' => $user->id,
                     'channel_id' => $channel->id
                 ]);
-                ChatPrivate::create([
+                $chat_user_2 = ChatPrivate::create([
                     'user_id' => $user->id,
                     'user_2' => Auth::id(),
                     'channel_id' => $channel->id
                 ]);
 
-                event(new CreateNewChat($chat, $user->id));
+                event(new CreateNewChat($chat_user_2, $user->id));
                 event(new CreateNewChat($chat, Auth::id()));
             }else{
                 return response()->json(['error' => 'У вас уже есть чат с данным человеком'], 403);
